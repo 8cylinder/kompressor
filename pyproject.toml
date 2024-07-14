@@ -11,6 +11,8 @@ typeguard = "^4.3.0"
 click = "^8.1.7"
 pytest = "^8.2.2"
 
+[tool.poetry.scripts]
+condenser = "condenser.cli:condenser"
 
 [build-system]
 requires = ["poetry-core"]
