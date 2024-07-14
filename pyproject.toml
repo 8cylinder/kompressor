@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "condenser"
+version = "0.1.0"
+description = ""
+authors = ["Sheldon McGrandle <developer@8cylinder.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+typeguard = "^4.3.0"
+click = "^8.1.7"
+pytest = "^8.2.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
