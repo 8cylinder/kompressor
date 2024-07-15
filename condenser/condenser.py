@@ -17,10 +17,10 @@ import concurrent.futures
 
 
 @typechecked
-def get_files_by_extension(path: os.PathLike, image_types: list) -> list:
+def get_files_by_extension(path: os.PathLike, wanted_filetypes: list) -> list:
     """Return a list of image files in the given path that match the image types."""
     image_files = []  # extension
-    for image_type in image_types:
+    for image_type in wanted_filetypes:
         image_files.extend(Path(path).glob(f'*.{image_type}'))
     return image_files
 
@@ -133,7 +133,7 @@ class Compress:
         """
         with tempfile.TemporaryDirectory() as tmp:
             cmd: list = [
-                'xjpegoptim', '--quiet', '--overwrite', '--strip-exif', '--max', self.quality,
+                'jpegoptim', '--quiet', '--overwrite', '--strip-exif', '--max', self.quality,
                 '--dest', tmp, self.source_image
             ]
             # compress the image to the tmp dir
