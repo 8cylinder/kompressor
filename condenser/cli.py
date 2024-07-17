@@ -1,7 +1,9 @@
+import sys
 import click
 import pathlib
 from pathlib import Path
 from condenser.condenser import Compress
+from condenser.condenser import humanize
 from typeguard import typechecked
 import concurrent.futures
 
@@ -13,10 +15,10 @@ CONTEXT_SETTINGS = {
 
 @click.command(context_settings=CONTEXT_SETTINGS)
 @click.argument('source',
-                type=click.Path(path_type=Path, exists=True, dir_okay=False),
+                type=click.Path(resolve_path=True, path_type=Path, exists=True, dir_okay=False),
                 required=True,
                 nargs=-1)
-@click.option('--output-dir', '-o', type=click.Path(path_type=Path, file_okay=False),
+@click.option('--output-dir', '-o', type=click.Path(resolve_path=True, path_type=Path, file_okay=False),
               help="Optional output dir.")
 @click.option('--quality', '-q', type=click.IntRange(1, 100), default=70)
 @click.option('--source-rename', '-s', type=click.STRING,
@@ -45,6 +47,7 @@ def condenser(
 
     image_files: list[pathlib.Path] = []
     for file in source:
+        file = file.absolute()
         if file.suffix in image_types:
             image_files.append(file)
 
@@ -53,52 +56,32 @@ def condenser(
         if len(f.name) > longest:
             longest = len(f.name)
 
-    # USE_MULITPROCESSING = False
-    USE_MULITPROCESSING = True
-
-    if USE_MULITPROCESSING:
-        # Use ThreadPoolExecutor to process images in parallel
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = []
-            for image_file in image_files:
-                image = Compress(image_file, quality)
-                if output_dir:
-                    image.output_dir = output_dir
-                if source_rename:
-                    image.source_rename = source_rename
-                if output_rename:
-                    image.dest_rename = output_rename
-
-                # Submit the compression task
-                future = executor.submit(image.compress)
-                futures.append(future)
-
-            for future in concurrent.futures.as_completed(futures):
-                try:
-                    compressed_image, original_size, optimized_size = future.result()
-                except FileNotFoundError as e:
-                    print(f'Command not found: {e}')
-                    sys.exit(1)
-
-                print(
-                    f'{compressed_image.name:<{longest}}  {humanize(original_size):>6} -> {humanize(optimized_size):>6}')
-
-    else:
+    # Use ThreadPoolExecutor to process images in parallel
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = []
         for image_file in image_files:
             image = Compress(image_file, quality)
             if output_dir:
-                image.output_dir = output_dir
+                image.output_dir = output_dir.absolute()
             if source_rename:
                 image.source_rename = source_rename
             if output_rename:
                 image.dest_rename = output_rename
 
-            compressed_image, original_size, optimized_size = (None, None, None)
+            # Submit the compression task
+            future = executor.submit(image.compress)
+            futures.append(future)
+
+        for future in concurrent.futures.as_completed(futures):
             try:
-                compressed_image, original_size, optimized_size = image.compress()
+                image_data = future.result()
             except FileNotFoundError as e:
                 print(f'Command not found: {e}')
                 sys.exit(1)
 
             print(
-                f'{compressed_image.name:<{longest}}  {humanize(original_size):>6} -> {humanize(optimized_size):>6}')
+                image_data.compressed_image.name.ljust(longest),
+                humanize(image_data.original_size).rjust(6),
+                '->',
+                humanize(image_data.compressed_size).rjust(6),
+            )

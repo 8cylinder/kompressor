@@ -1,21 +1,25 @@
-import sys
 import pytest
 from click.testing import CliRunner
 from pathlib import Path
-from condenser.cli import condenser
 from condenser.condenser import get_files_by_extension
 from condenser.condenser import humanize
 from condenser.condenser import Compress
 import tempfile
-import shutil
-from PIL import Image
+from pprint import pprint as pp
+import uuid
+from typeguard import typechecked
+from condenser.generate_image import generate_test_image
 
+
+# pytest
+# pytest -rP
 
 @pytest.fixture
 def runner():
     return CliRunner()
 
 
+@typechecked
 def test_humanize_formatting():
     numbers: dict[str, int] = {
         "1 bytes": 1,
@@ -32,110 +36,133 @@ def test_humanize_formatting():
         assert humanize(number) == expected, f"Should format {number} as {expected}"
 
 
-def test_get_files_by_extension(tmp_path: Path):
-    # Setup test environment: Create sample files
-    wanted_types: List[str] = ['jpg', 'png']
-    test_extensions: List[str] = ['jpg', 'jpeg', 'png', 'gif', 'txt']
-    expected_files: list[Path] = []
-    for ext in test_extensions:
-        file: Path = tmp_path / f"test_file.{ext}"
-        file.touch()  # This creates the file
-        if ext in wanted_types:  # Assuming we're filtering for these
-            expected_files.append(file)
-    print(expected_files)
+@pytest.fixture
+@typechecked
+def sample_images_setup():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        id = str(uuid.uuid4()).split('-')[-1]
+        sample_images: dict[str, str] = {
+            f'sample-{id}.jpg': 'JPEG',
+            f'sample-{id}.png': 'PNG',
+            f'sample-{id}.webp': 'WEBP',
+        }
+        sample_non_images: list[str] = [f'sample-{id}.txt']
+        created_files: dict[str, Path] = {}
 
-    # Invoke the function
-    result_files: List[str] = get_files_by_extension(tmp_path, wanted_types)
+        for image_name, format in sample_images.items():
+            sample_image_path = Path(tmpdir) / image_name
+            image = generate_test_image()
+            image.save(sample_image_path, format)
+            created_files[format] = sample_image_path
 
-    # Convert result to Path objects for comparison
-    result_paths: List[Path] = [Path(f) for f in result_files]
+        for non_image_name in sample_non_images:
+            sample_non_image_path = Path(tmpdir) / non_image_name
+            with open(sample_non_image_path, 'w') as f:
+                f.write('This is a text file.')
+            created_files['TXT'] = sample_non_image_path
 
-    print("Expected files:", expected_files)
-    print("Result files:", result_paths)
+        pp(['created_files:', created_files])
 
-    # Verify the results: Check if the returned files match the expected files
-    assert set(result_paths) == set(expected_files), \
+        yield created_files, Path(tmpdir)
+
+
+@typechecked
+def test_get_files_by_extension(sample_images_setup):
+    created_files, tmpdir = sample_images_setup
+    wanted_types: list[str] = ['xxx', 'jpg', 'jpeg', 'png', 'webp']
+    found_files: list[Path] = get_files_by_extension(tmpdir, wanted_types)
+    expected_files: list[Path] = [created_files[i] for i in created_files if i.lower() in wanted_types]
+
+    assert set(found_files) == set(expected_files), \
         "The function should return the correct files matching the specified test_extensions"
 
 
-@pytest.fixture
-def sample_images_setup():
-    with tempfile.TemporaryDirectory() as tmpdir:
-        # Setup sample image files
+@typechecked
+def test_each_image_type(sample_images_setup):
+    """Test compression effectiveness across different image types.
 
-        sample_image_path = Path(tmpdir) / "sample.jpg"
-        with open(sample_image_path, "wb") as f:
-            f.write(b"\x00" * 1024)  # Create a dummy file of 1KB
+    Iterates through a set of image types (JPEG, PNG, WEBP), compressing each
+    one at a low quality setting. It verifies that:
+    - The compressed image file is created.
+    - The compressed image is saved in the 'condensed' directory.
+    - The compressed image's size is less than the original's size.
 
-        yield sample_image_path, Path(tmpdir)
+    Parameters:
+    - sample_images_setup: A pytest fixture preparing a set of images and
+      directories for the test.
+
+    Asserts:
+    - Compressed image file's existence.
+    - Correct output directory for the compressed image.
+    - Reduced file size of the compressed image compared to the original.
+    """
+    for image_type in ['JPEG', 'PNG', 'WEBP']:
+        created_files, tmpdir = sample_images_setup
+
+        source_image: Path = created_files[image_type]
+        quality: int = 10
+        image: Compress = Compress(source_image, quality)
+        data = image.compress()
+
+        pp({
+            'source_image': data.source_image,
+            'output_dir': image.output_dir,
+            'compressed_image': data.compressed_image,
+            'source size': data.original_size,
+            'compressed size': data.compressed_size,
+        })
+
+        assert data.compressed_image.exists(), "The compressed image should exist."
+        assert data.compressed_image.parent.parts[-1] == "condensed", \
+            "The compressed image should be created in the specified output directory."
+        assert data.compressed_size < data.original_size, \
+            "The compressed image should have a smaller file size than the original image."
 
 
-def test_compress_method(sample_image_setup):
-    sample_image, output_dir = sample_image_setup
-    quality = 70
+@typechecked
+def test_rename(sample_images_setup):
+    """Test the renaming functionality for both source and destination images
+    during compression.
 
-    compressor = Compress(source_image=sample_image, quality=quality)
-    compressor.output_dir = output_dir
+    This test ensures that the `Compress` class correctly applies the specified
+    `source_rename` and `dest_rename` suffixes to the source and compressed
+    images, respectively. It verifies that:
+    - The compressed image exists in the specified output directory.
+    - The compressed image's file size is smaller than the original image's size.
+    - The source image's name includes the `source_rename` suffix.
+    - The compressed image's name includes the `dest_rename` suffix.
+    """
+    created_files, tmpdir = sample_images_setup
 
-    compressed_image_path, original_size, compressed_size = compressor.compress()
+    source_image: Path = created_files['JPEG']
+    quality: int = 50
+    image: Compress = Compress(source_image, quality)
 
-    # Verify the compressed image exists
-    assert compressed_image_path.exists(), "Compressed image file should exist."
+    subdir: str = 'alternative-output-dir'
+    image.output_dir = Path(subdir)
 
-    # Verify the compressed image is smaller than the original
-    assert compressed_size < original_size, "Compressed image should be smaller than the original."
+    source_rename: str = '-SOURCE-RENAMED'
+    image.source_rename = source_rename
 
+    dest_rename: str = '-DEST-RENAMED'
+    image.dest_rename = dest_rename
 
-def test_get_type_method():
-    # Assuming JPEG format for simplicity
-    compressor = Compress(source_image=Path("sample.jpg"), quality=70)
-    assert compressor._get_type() == "jpeg", "Should identify JPEG format correctly."
+    data = image.compress()
 
+    pp({
+        'source_image': data.source_image,
+        'output_dir': image.output_dir,
+        'compressed_image': data.compressed_image,
+        'source size': data.original_size,
+        'compressed size': data.compressed_size,
+    })
 
-def test_output_dir_property():
-    compressor = Compress(source_image=Path("sample.jpg"), quality=70)
-    test_dir = Path("/path/to/output")
-    compressor.output_dir = test_dir
-    assert compressor.output_dir == test_dir, "Output directory should be set correctly."
-
-
-# def test_your_command():
-#     runner = CliRunner()
-#     result = runner.invoke(your_command, ['--option', 'value'])
-#     assert result.exit_code == 0
-#     assert 'Expected output' in result.output
-#
-#
-# @pytest.fixture
-# def sample_image(tmp_path):
-#     # Create a temporary image file to use as a test input
-#     sample_image_path = tmp_path / "sample.jpg"
-#     sample_image_path.write_bytes(b"Fake image data")
-#     return sample_image_path
-#
-#
-# def test_condenser_no_args(runner):
-#     """Test running the condenser command without arguments."""
-#     result = runner.invoke(condenser)
-#     assert result.exit_code != 0
-#     assert "Error: Missing argument 'SOURCE...'" in result.output
-#
-#
-# def test_condenser_help_option(runner):
-#     """Test the --help option."""
-#     result = runner.invoke(condenser, ['--help'])
-#     assert result.exit_code == 0
-#     assert "Usage:" in result.output
-#     assert "--output-dir" in result.output
-#     assert "--quality" in result.output
-#
-#
-# def test_image_compression(runner, sample_image, tmp_path):
-#     """Test actual image compression."""
-#     output_dir = tmp_path / "output"
-#     output_dir.mkdir()
-#     result = runner.invoke(condenser, [str(sample_image), '--output-dir', str(output_dir)])
-#     # Assuming the command exits successfully, you might need to adjust based on actual behavior
-#     assert result.exit_code == 0
-#     # Check if the output directory contains the compressed file
-#     assert any(output_dir.iterdir()), "Output directory should contain at least one file after compression."
+    assert data.compressed_image.exists(), "The compressed image should exist."
+    assert data.compressed_image.parent.parts[-1] == subdir, \
+        "The compressed image should be created in the specified output directory."
+    assert data.compressed_size < data.original_size, \
+        "The compressed image should have a smaller file size than the original image."
+    assert source_rename in data.source_image.name, \
+        "The source image should have the specified source rename in its name."
+    assert dest_rename in data.compressed_image.name, \
+        "The compressed image should have the specified destination rename in its name."

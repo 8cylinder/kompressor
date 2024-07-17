@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import sys
 import os
 import shlex
@@ -7,63 +6,59 @@ from pathlib import Path
 import tempfile
 import click
 from pprint import pprint as pp
-#from PIL import Image
 import subprocess
 from typeguard import typechecked
 import concurrent.futures
+from dataclasses import dataclass
 
 
 # from IPython.core.debugger import set_trace; set_trace()
 
 
+@dataclass
+class ImageData:
+    compressed_image: Path
+    source_image: Path
+    original_size: int
+    compressed_size: int
+
+
 @typechecked
 def get_files_by_extension(path: os.PathLike, wanted_filetypes: list) -> list:
     """Return a list of image files in the given path that match the image types."""
-    image_files = []  # extension
+    image_files: list[Path] = []  # extension
     for image_type in wanted_filetypes:
         image_files.extend(Path(path).glob(f'*.{image_type}'))
     return image_files
 
 
 @typechecked
-def humanize(bytes: int) -> str:
+def humanize(size: int) -> str:
     """Convert a size in bytes to a human-readable format."""
     units = ['bytes', 'KB', 'MB', 'GB']
     index = 0
 
     # Convert the size to a higher unit until it's less than 1024
-    while bytes >= 1024 and index < len(units) - 1:
-        bytes = round(bytes / 1024)
+    while size >= 1024 and index < len(units) - 1:
+        size = round(size / 1024)
         index += 1
 
     # Format the size to 2 decimal places
-    bytes = round(bytes, 2)
+    size = round(size, 2)
 
-    return f'{bytes} {units[index]}'
+    return f'{size} {units[index]}'
 
 
 @typechecked
 class Compress:
     """
-    A class to compress image files using specified quality
+    A class to compress a single image using specified quality
     settings.
 
     This class supports JPEG, PNG, and WEBP formats, utilizing
     external tools (jpegoptim, pngquant, webp) for compression.
     These tools must be installed and accessible in the system's
     PATH.
-
-    Attributes:
-        source_image (Path): Path to the source image.
-        quality (int): Compression quality setting.
-        output_dir (Path): Directory for the compressed image.
-        types (dict): Mapping of file extensions to formats.
-
-    Methods:
-        compress(): Compresses the source image and saves it.
-                    Returns original and compressed sizes.
-        _get_type(): Determines the image format.
-        run_cmd(cmd: str): Executes a shell command.
     """
     types: dict[str, str] = {
         'png':  'png',
@@ -86,7 +81,9 @@ class Compress:
 
     @output_dir.setter
     def output_dir(self, output_dir: pathlib.Path) -> None:
-        self._output_dir = output_dir
+        source_dir: Path = self.source_image.parent
+        sub_dir: Path = source_dir / output_dir.name
+        self._output_dir = sub_dir
 
     # source rename string
     @property
@@ -109,24 +106,16 @@ class Compress:
     # -----------------------------------------
 
     def _get_type(self) -> str:
-        type: str = self.source_image.suffix
-        type = type[1:]  # remove the leading dot
-        if type in self.types:
-            return self.types[type]
+        image_type: str = self.source_image.suffix
+        image_type = image_type[1:]  # remove the leading dot
+        if image_type in self.types:
+            return self.types[image_type]
         else:
-            raise ValueError(f'Unsupported image type: {type}')
+            raise ValueError(f'Unsupported image type: {image_type}')
 
-    def compress_jpeg(self, output_name: str) -> pathlib.Path:
-        """
-        Compresses a JPEG image to a specified quality and moves it to the output
+    def compress_jpeg(self, output_name: str) -> Path:
+        """Compresses a JPEG image to a specified quality and moves it to the output
         directory with a new name.
-
-        Parameters:
-            output_name (str): The new name for the compressed image file. This name
-                               is used when moving the file to the output directory.
-
-        Returns:
-            pathlib.Path: The path to the compressed image in the output directory.
 
         Raises:
             subprocess.CalledProcessError: If the `jpegoptim` command fails.
@@ -143,42 +132,32 @@ class Compress:
 
             # move the compressed image to the output directory
             compressed_image: pathlib.Path = compressed_image.rename(self._output_dir / Path(output_name))
+            compressed_image = compressed_image.absolute()
             return compressed_image
 
-    def compress_png(self, output_name: str) -> pathlib.Path:
-        out: pathlib.Path = self._output_dir / Path(output_name)
+    def compress_png(self, output_name: str) -> Path:
+        out: Path = self._output_dir / Path(output_name)
         quality: str = f'0-{self.quality}'
         cmd = ['pngquant', '--force', '--quality', quality, '--output', out, self.source_image]
         self.run_cmd(cmd)
         return out
 
+    def compress_webp(self, output_name: str) -> Path:
+        out: Path = self._output_dir / Path(output_name)
+        cmd = ['cwebp', '-q', self.quality, self.source_image, '-o', out]
+        self.run_cmd(cmd)
+        return out
 
-    def compress_webp(self, output_name: str) -> None:
-        print('compress_webp')
-        # cmd = ['webp', '-q', self.quality, self.source_image, '-o', self.output_dir]
-
-    def run_cmd(self, cmd: list):
+    def run_cmd(self, cmd: list) -> None:
         cmd: list[str] = [str(i) for i in cmd]
-        # merged_cmd: str = shlex.join(cmd)
-        # print(merged_cmd)
-        # return
-
-        result: subprocess.CompletedProcess = subprocess.run(cmd, capture_output=True)
-
-        # try:
-        #     result: subprocess.CompletedProcess = subprocess.run(cmd, capture_output=True)
-        # except subprocess.CalledProcessError as e:
-        #     raise FileNotFoundError(f'Command not found: {cmd}, {e}')
-        # except FileNotFoundError as e:
-        #     raise FileNotFoundError(f'xxxFile not found: {cmd}, {e}')
-        # print('>>>', result)
+        subprocess.run(cmd, capture_output=True)
 
     @staticmethod
     def create_new_name(name: pathlib.Path, suffix: str):
         new_name = name.stem + suffix + name.suffix
         return new_name
 
-    def compress(self):
+    def compress(self) -> ImageData:
         """
         Compresses the source image using the specified quality setting.
 
@@ -210,7 +189,9 @@ class Compress:
 
         # if nothing is set, default to 'condensed' dir
         if not self._source_rename and not self._dest_rename and not self._output_dir:
-            self._output_dir = Path('condensed')
+            source_dir: Path = self.source_image.parent
+            sub_dir: Path = source_dir / 'condensed'
+            self._output_dir = sub_dir
 
         # create the output dir if it doesn't exist
         if self._output_dir and not self._output_dir.exists():
@@ -230,15 +211,6 @@ class Compress:
 
         image_type: str = self._get_type()
 
-        # pp({
-        #     'source rename': self._source_rename,
-        #     'dest rename': self._dest_rename,
-        #     'output dir': self._output_dir,
-        #     'source image': self.source_image,
-        #     'output name': output_name,
-        #     'image type': image_type,
-        # })
-
         if image_type == 'jpeg':
             compressed_image = self.compress_jpeg(output_name)
         elif image_type == 'png':
@@ -249,10 +221,12 @@ class Compress:
             raise ValueError(f'Unsupported image type: {image_type}')
 
         # rename source if requested, but only if it hasn't already been renamed.
-        if self.source_rename and not self.source_rename in self.source_image.name:
-            new_source_name: str = self.create_new_name(self.source_image, self.source_rename)
-            self.source_image = self.source_image.rename(new_source_name)
+        if self._source_rename and self._source_rename not in self.source_image.name:
+            source_dir: pathlib.Path = self.source_image.parent
+            new_source_name: str = self.create_new_name(self.source_image, self._source_rename)
+            self.source_image = self.source_image.rename(source_dir / new_source_name)
 
         compressed_size: int = compressed_image.stat().st_size
 
-        return compressed_image, original_size, compressed_size
+        data = ImageData(compressed_image, self.source_image, original_size, compressed_size)
+        return data
