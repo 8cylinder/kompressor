@@ -9,6 +9,8 @@ readme = "README.md"
 python = "^3.12"
 typeguard = "^4.3.0"
 click = "^8.1.7"
+black = "^24.8.0"
+ipython = "^8.26.0"
 
 [tool.poetry.scripts]
 condenser = "condenser.cli:condenser"

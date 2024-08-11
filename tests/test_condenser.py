@@ -40,20 +40,20 @@ def test_humanize_formatting():
 @typechecked
 def sample_images_setup():
     with tempfile.TemporaryDirectory() as tmpdir:
-        id = str(uuid.uuid4()).split('-')[-1]
+        image_id = str(uuid.uuid4()).split('-')[-1]
         sample_images: dict[str, str] = {
-            f'sample-{id}.jpg': 'JPEG',
-            f'sample-{id}.png': 'PNG',
-            f'sample-{id}.webp': 'WEBP',
+            f'sample-{image_id}.jpg': 'JPEG',
+            f'sample-{image_id}.png': 'PNG',
+            f'sample-{image_id}.webp': 'WEBP',
         }
-        sample_non_images: list[str] = [f'sample-{id}.txt']
+        sample_non_images: list[str] = [f'sample-{image_id}.txt']
         created_files: dict[str, Path] = {}
 
-        for image_name, format in sample_images.items():
+        for image_name, image_format in sample_images.items():
             sample_image_path = Path(tmpdir) / image_name
             image = generate_test_image()
-            image.save(sample_image_path, format)
-            created_files[format] = sample_image_path
+            image.save(sample_image_path, image_format)
+            created_files[image_format] = sample_image_path
 
         for non_image_name in sample_non_images:
             sample_non_image_path = Path(tmpdir) / non_image_name
@@ -98,7 +98,6 @@ def test_each_image_type(sample_images_setup):
     """
     for image_type in ['JPEG', 'PNG', 'WEBP']:
         created_files, tmpdir = sample_images_setup
-
         source_image: Path = created_files[image_type]
         quality: int = 10
         image: Compress = Compress(source_image, quality)
