@@ -217,8 +217,12 @@ class Compress:
             self._output_dir = sub_dir
 
         # create the output dir if it doesn't exist
-        if self._output_dir and not self._output_dir.exists():
-            self._output_dir.mkdir(parents=True)
+        if self._output_dir:
+            try:
+                self._output_dir.mkdir(parents=True)
+            except FileExistsError:
+                # in multi-threaded environments, this directory may have been created
+                pass
 
         # if the output_dir is not set, set it to the current dir
         if not self._output_dir:
