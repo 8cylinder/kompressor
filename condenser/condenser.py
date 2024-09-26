@@ -35,18 +35,21 @@ def get_files_by_extension(path: os.PathLike, wanted_filetypes: list) -> list:
 @typechecked
 def humanize(size: int) -> str:
     """Convert a size in bytes to a human-readable format."""
-    units = ["bytes", "KB", "MB", "GB"]
+    units = ['B', 'K', 'M', 'G']
     index = 0
 
     # Convert the size to a higher unit until it's less than 1024
+    size: float = float(size)
     while size >= 1024 and index < len(units) - 1:
-        size = round(size / 1024)
+        size = size / 1024
         index += 1
 
-    # Format the size to 2 decimal places
-    size = round(size, 2)
+    if index >= 2:
+        pretty_size = round(size, 1)
+    else:
+        pretty_size = round(size)
 
-    return f"{size} {units[index]}"
+    return f'{pretty_size}{units[index]}'
 
 
 @typechecked

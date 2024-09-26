@@ -80,8 +80,12 @@ def condenser(
                 sys.exit(1)
 
             print(
-                image_data.compressed_image.name.ljust(longest),
+                image_data.compressed_image.name.ljust(longest + 2),
                 humanize(image_data.original_size).rjust(6),
                 '->',
                 humanize(image_data.compressed_size).rjust(6),
+                '  ',
+                str(image_data.original_size).rjust(8),
+                '->',
+                str(image_data.compressed_size).rjust(8),
             )
