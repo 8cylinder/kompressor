@@ -71,34 +71,14 @@ class Compress:
         "webp": "webp",
     }
 
-    def __init__(self, source_image: pathlib.Path, quality: int = 70):
+    def __init__(
+        self, source_image: pathlib.Path, quality: int, output_dir: pathlib.Path
+    ):
         self.source_image: pathlib.Path = source_image
         self.quality: int = quality
-        self._output_dir: pathlib.Path | None = None
-        self._source_rename: str = ""
+        self._output_dir: pathlib.Path = output_dir
         self._dest_rename: str = ""
 
-    # output dir
-    @property
-    def output_dir(self) -> pathlib.Path:
-        return self._output_dir
-
-    @output_dir.setter
-    def output_dir(self, output_dir: pathlib.Path) -> None:
-        source_dir: Path = self.source_image.parent
-        sub_dir: Path = source_dir / output_dir.name
-        self._output_dir = sub_dir
-
-    # source rename string
-    @property
-    def source_rename(self) -> str:
-        return self._source_rename
-
-    @source_rename.setter
-    def source_rename(self, source_rename: str) -> None:
-        self._source_rename = source_rename
-
-    # dest rename string
     @property
     def dest_rename(self) -> str:
         return self._dest_rename
@@ -106,8 +86,6 @@ class Compress:
     @dest_rename.setter
     def dest_rename(self, dest_rename: str) -> None:
         self._dest_rename = dest_rename
-
-    # -----------------------------------------
 
     def _get_type(self) -> str:
         image_type: str = self.source_image.suffix
@@ -120,6 +98,10 @@ class Compress:
     def compress_jpeg(self, output_name: str) -> Path:
         """Compresses a JPEG image to a specified quality and moves it to the
         output directory with a new name.
+
+        jpegoptim doesn't allow renaming of the file when compressing, so we
+        need to use a temporary directory to store the compressed image before
+        moving it to the output directory and renaming.
 
         Raises:
             subprocess.CalledProcessError: If the `jpegoptim` command fails.
@@ -138,9 +120,6 @@ class Compress:
             self.run_cmd(cmd)
 
             compressed_image: Path = Path(tmp) / self.source_image.name
-            # print("a", compressed_image, self.source_image)
-            # print(compressed_image.exists())
-            # from IPython import embed; embed()
 
             # move the compressed image to the output directory
             compressed_image: Path = compressed_image.rename(
@@ -152,15 +131,14 @@ class Compress:
     def compress_png(self, output_name: str) -> Path:
         out: Path = self._output_dir / Path(output_name)
         quality: str = f"0-{self.quality}"
+        # fmt: off
         cmd = [
-            "pngquant",
-            "--force",
-            "--quality",
-            quality,
-            "--output",
-            out,
+            "pngquant", "--force",
+            "--quality", quality,
+            "--output", out,
             self.source_image,
         ]
+        # fmt: on
         self.run_cmd(cmd)
         return out
 
@@ -210,12 +188,6 @@ class Compress:
 
         original_size: int = self.source_image.stat().st_size
 
-        # if nothing is set, default to 'condensed' dir
-        if not self._source_rename and not self._dest_rename and not self._output_dir:
-            source_dir: Path = self.source_image.parent
-            sub_dir: Path = source_dir / "condensed"
-            self._output_dir = sub_dir
-
         # create the output dir if it doesn't exist
         if self._output_dir:
             try:
@@ -229,11 +201,8 @@ class Compress:
             self._output_dir = Path(".").absolute()
 
         output_name: str = self.source_image.name
-        # rename the output if requested and base it off the original name without the
-        # self._source_rename value.
+        # rename the output
         if self._dest_rename:
-            if self._source_rename in output_name:
-                output_name = output_name.replace(self._source_rename, "")
             output_name = self.create_new_name(Path(output_name), self._dest_rename)
 
         image_type: str = self._get_type()
@@ -245,14 +214,6 @@ class Compress:
             compressed_image = self.compress_webp(output_name)
         else:
             raise ValueError(f"Unsupported image type: {image_type}")
-
-        # rename source if requested, but only if it hasn't already been renamed.
-        if self._source_rename and self._source_rename not in self.source_image.name:
-            source_dir: pathlib.Path = self.source_image.parent
-            new_source_name: str = self.create_new_name(
-                self.source_image, self._source_rename
-            )
-            self.source_image = self.source_image.rename(source_dir / new_source_name)
 
         compressed_size: int = compressed_image.stat().st_size
 

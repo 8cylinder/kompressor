@@ -24,15 +24,16 @@ CONTEXT_SETTINGS = {
     "--output-dir",
     "-o",
     type=click.Path(resolve_path=True, path_type=Path, file_okay=False),
-    help="Optional output dir.",
+    default="condenser",
+    help="Optional output dir.  Defaults to 'condenser'.",
 )
 @click.option("--quality", "-q", type=click.IntRange(1, 100), default=70)
-@click.option(
-    "--source-rename",
-    "-s",
-    type=click.STRING,
-    help="Rename the source images to include this string.",
-)
+# @click.option(
+#     "--source-rename",
+#     "-s",
+#     type=click.STRING,
+#     help="Rename the source images to include this string.",
+# )
 @click.option(
     "--output-rename",
     "-r",
@@ -45,7 +46,7 @@ def condenser(
     source: tuple[pathlib.Path, ...],
     output_dir: pathlib.Path | None,
     quality: int,
-    source_rename: str | None,
+    # source_rename: str | None,
     output_rename: str | None,
 ) -> None:
     """Minify images to a smaller size using lossy compression.
@@ -54,12 +55,21 @@ def condenser(
 
     Supported formats: png, jpeg, webp.
 
+    To generate compressed images with different quality settings, use a range.
+    The following example generates 3 compressed images with different quality
+    settings and puts them in the 'ranges' directory.
+
+    \b
+    for QUALITY in 10 50 80; do
+      echo "Quality: $QUALITY --------------------";
+      condenser -o ranges -q $QUALITY -r "-$QUALITY" *.png;
+    done
+
     \b
     These command line tools are required:
     `apt install pngquant jpegoptim webp`
     """
     image_types = [".png", ".jpeg", ".jpg", ".webp"]
-
     image_files: list[pathlib.Path] = []
     for file in source:
         file = file.absolute()
@@ -70,16 +80,13 @@ def condenser(
     for f in image_files:
         if len(f.name) > longest:
             longest = len(f.name)
+    longest = longest + len(output_rename) if output_rename else longest
 
     # Use ThreadPoolExecutor to process images in parallel
     with concurrent.futures.ThreadPoolExecutor() as executor:
         futures = []
         for image_file in image_files:
-            image = Compress(image_file, quality)
-            if output_dir:
-                image.output_dir = output_dir.absolute()
-            if source_rename:
-                image.source_rename = source_rename
+            image = Compress(image_file, quality, output_dir)
             if output_rename:
                 image.dest_rename = output_rename
 
