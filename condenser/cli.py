@@ -28,12 +28,6 @@ CONTEXT_SETTINGS = {
     help="Optional output dir.  Defaults to 'condenser'.",
 )
 @click.option("--quality", "-q", type=click.IntRange(1, 100), default=70)
-# @click.option(
-#     "--source-rename",
-#     "-s",
-#     type=click.STRING,
-#     help="Rename the source images to include this string.",
-# )
 @click.option(
     "--output-rename",
     "-r",
@@ -46,7 +40,6 @@ def condenser(
     source: tuple[pathlib.Path, ...],
     output_dir: pathlib.Path | None,
     quality: int,
-    # source_rename: str | None,
     output_rename: str | None,
 ) -> None:
     """Minify images to a smaller size using lossy compression.
