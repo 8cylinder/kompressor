@@ -8,30 +8,45 @@ from typeguard import typechecked
 import concurrent.futures
 
 CONTEXT_SETTINGS = {
-    'help_option_names':    ['-h', '--help'],
-    'token_normalize_func': lambda x: x.lower(),
+    "help_option_names": ["-h", "--help"],
+    "token_normalize_func": lambda x: x.lower(),
 }
 
 
 @click.command(context_settings=CONTEXT_SETTINGS)
-@click.argument('source',
-                type=click.Path(resolve_path=True, path_type=Path, exists=True, dir_okay=False),
-                required=True,
-                nargs=-1)
-@click.option('--output-dir', '-o', type=click.Path(resolve_path=True, path_type=Path, file_okay=False),
-              help="Optional output dir.")
-@click.option('--quality', '-q', type=click.IntRange(1, 100), default=70)
-@click.option('--source-rename', '-s', type=click.STRING,
-              help="Rename the source images to include this string.")
-@click.option('--output-rename', '-r', type=click.STRING,
-              help="Rename the output images to include this string.")
+@click.argument(
+    "source",
+    type=click.Path(resolve_path=True, path_type=Path, exists=True, dir_okay=False),
+    required=True,
+    nargs=-1,
+)
+@click.option(
+    "--output-dir",
+    "-o",
+    type=click.Path(resolve_path=True, path_type=Path, file_okay=False),
+    help="Optional output dir.",
+)
+@click.option("--quality", "-q", type=click.IntRange(1, 100), default=70)
+@click.option(
+    "--source-rename",
+    "-s",
+    type=click.STRING,
+    help="Rename the source images to include this string.",
+)
+@click.option(
+    "--output-rename",
+    "-r",
+    type=click.STRING,
+    help="Rename the output images to include this string.",
+)
+@click.version_option()
 @typechecked
 def condenser(
-        source: tuple[pathlib.Path, ...],
-        output_dir: pathlib.Path | None,
-        quality: int,
-        source_rename: str | None,
-        output_rename: str | None,
+    source: tuple[pathlib.Path, ...],
+    output_dir: pathlib.Path | None,
+    quality: int,
+    source_rename: str | None,
+    output_rename: str | None,
 ) -> None:
     """Minify images to a smaller size using lossy compression.
 
@@ -43,12 +58,12 @@ def condenser(
     These command line tools are required:
     `apt install pngquant jpegoptim webp`
     """
-    image_types = ['.png', '.jpeg', '.jpg', '.webp']
+    image_types = [".png", ".jpeg", ".jpg", ".webp"]
 
     image_files: list[pathlib.Path] = []
     for file in source:
         file = file.absolute()
-        if file.suffix in image_types:
+        if file.suffix.lower() in image_types:
             image_files.append(file)
 
     longest: int = 0
@@ -76,16 +91,16 @@ def condenser(
             try:
                 image_data = future.result()
             except FileNotFoundError as e:
-                print(f'Command not found: {e}')
+                print(f"Command not found: {e}")
                 sys.exit(1)
 
             print(
                 image_data.compressed_image.name.ljust(longest + 2),
                 humanize(image_data.original_size).rjust(6),
-                '->',
+                "->",
                 humanize(image_data.compressed_size).rjust(6),
-                '  ',
+                "  ",
                 str(image_data.original_size).rjust(8),
-                '->',
+                "->",
                 str(image_data.compressed_size).rjust(8),
             )

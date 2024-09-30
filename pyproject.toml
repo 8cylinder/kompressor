@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "condenser"
-version = "0.1.0"
+version = "0.2.0"
 description = ""
 authors = ["Sheldon McGrandle <developer@8cylinder.com>"]
 readme = "README.md"

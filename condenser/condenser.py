@@ -35,7 +35,7 @@ def get_files_by_extension(path: os.PathLike, wanted_filetypes: list) -> list:
 @typechecked
 def humanize(size: int) -> str:
     """Convert a size in bytes to a human-readable format."""
-    units = ['B', 'K', 'M', 'G']
+    units = ["B", "K", "M", "G"]
     index = 0
 
     # Convert the size to a higher unit until it's less than 1024
@@ -49,7 +49,7 @@ def humanize(size: int) -> str:
     else:
         pretty_size = round(size)
 
-    return f'{pretty_size}{units[index]}'
+    return f"{pretty_size}{units[index]}"
 
 
 @typechecked
@@ -111,7 +111,7 @@ class Compress:
 
     def _get_type(self) -> str:
         image_type: str = self.source_image.suffix
-        image_type = image_type[1:]  # remove the leading dot
+        image_type = image_type[1:].lower()  # remove the leading dot
         if image_type in self.types:
             return self.types[image_type]
         else:
@@ -237,7 +237,6 @@ class Compress:
             output_name = self.create_new_name(Path(output_name), self._dest_rename)
 
         image_type: str = self._get_type()
-
         if image_type == "jpeg":
             compressed_image = self.compress_jpeg(output_name)
         elif image_type == "png":
