@@ -2,9 +2,11 @@ import sys
 import click
 import pathlib
 from pathlib import Path
+# from condenser import Compress
+# from condenser import humanize
+
 from condenser.condenser import Compress
 from condenser.condenser import humanize
-from typeguard import typechecked
 import concurrent.futures
 
 CONTEXT_SETTINGS = {
@@ -35,7 +37,6 @@ CONTEXT_SETTINGS = {
     help="Rename the output images to include this string.",
 )
 @click.version_option()
-@typechecked
 def condenser(
     source: tuple[pathlib.Path, ...],
     output_dir: pathlib.Path | None,

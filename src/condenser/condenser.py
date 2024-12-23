@@ -7,7 +7,6 @@ import tempfile
 import click
 from pprint import pprint as pp
 import subprocess
-from typeguard import typechecked
 import concurrent.futures
 from dataclasses import dataclass
 
@@ -23,7 +22,7 @@ class ImageData:
     compressed_size: int
 
 
-@typechecked
+
 def get_files_by_extension(path: os.PathLike, wanted_filetypes: list) -> list:
     """Return a list of image files in the given path that match the image types."""
     image_files: list[Path] = []  # extension
@@ -32,7 +31,7 @@ def get_files_by_extension(path: os.PathLike, wanted_filetypes: list) -> list:
     return image_files
 
 
-@typechecked
+
 def humanize(size: int) -> str:
     """Convert a size in bytes to a human-readable format."""
     units = ["B", "K", "M", "G"]
@@ -52,7 +51,7 @@ def humanize(size: int) -> str:
     return f"{pretty_size}{units[index]}"
 
 
-@typechecked
+
 class Compress:
     """
     A class to compress a single image using specified quality

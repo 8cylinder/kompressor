@@ -1,6 +1,8 @@
 
 # Condenser
 
+Compress, convert and resize images.
+
 Compress jpegs, pngs or webp images.  This uses pngquant, jpegoptim
 and cwebp to do the actual compression.
 
