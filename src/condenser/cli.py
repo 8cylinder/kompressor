@@ -2,11 +2,8 @@ import sys
 import click
 import pathlib
 from pathlib import Path
-# from condenser import Compress
-# from condenser import humanize
-
-from condenser.condenser import Compress
-from condenser.condenser import humanize
+from .condenser import Compress
+from .condenser import humanize
 import concurrent.futures
 
 CONTEXT_SETTINGS = {
@@ -39,7 +36,7 @@ CONTEXT_SETTINGS = {
 @click.version_option()
 def condenser(
     source: tuple[pathlib.Path, ...],
-    output_dir: pathlib.Path | None,
+    output_dir: pathlib.Path,
     quality: int,
     output_rename: str | None,
 ) -> None:

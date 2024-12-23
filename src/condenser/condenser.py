@@ -1,13 +1,7 @@
-import sys
-import os
-import shlex
 import pathlib
 from pathlib import Path
 import tempfile
-import click
-from pprint import pprint as pp
 import subprocess
-import concurrent.futures
 from dataclasses import dataclass
 
 
@@ -22,14 +16,12 @@ class ImageData:
     compressed_size: int
 
 
-
-def get_files_by_extension(path: os.PathLike, wanted_filetypes: list) -> list:
+def get_files_by_extension(path: str, wanted_filetypes: list[str]) -> list[Path]:
     """Return a list of image files in the given path that match the image types."""
     image_files: list[Path] = []  # extension
     for image_type in wanted_filetypes:
         image_files.extend(Path(path).glob(f"*.{image_type}"))
     return image_files
-
 
 
 def humanize(size: int) -> str:
@@ -38,9 +30,9 @@ def humanize(size: int) -> str:
     index = 0
 
     # Convert the size to a higher unit until it's less than 1024
-    size: float = float(size)
-    while size >= 1024 and index < len(units) - 1:
-        size = size / 1024
+    precise_size: float = float(size)
+    while precise_size >= 1024 and index < len(units) - 1:
+        precise_size = precise_size / 1024
         index += 1
 
     if index >= 2:
@@ -49,7 +41,6 @@ def humanize(size: int) -> str:
         pretty_size = round(size)
 
     return f"{pretty_size}{units[index]}"
-
 
 
 class Compress:
@@ -107,11 +98,11 @@ class Compress:
         """
         with tempfile.TemporaryDirectory() as tmp:
             # fmt: off
-            cmd: list = [
+            cmd = [
                 "jpegoptim", "--quiet", "--overwrite", "--strip-exif",
-                "--max", self.quality,
+                "--max", str(self.quality),
                 "--dest", tmp,
-                self.source_image,
+                str(self.source_image),
             ]
             # fmt: on
 
@@ -121,7 +112,7 @@ class Compress:
             compressed_image: Path = Path(tmp) / self.source_image.name
 
             # move the compressed image to the output directory
-            compressed_image: Path = compressed_image.rename(
+            compressed_image = compressed_image.rename(
                 self._output_dir / Path(output_name)
             )
             compressed_image = compressed_image.absolute()
@@ -134,8 +125,8 @@ class Compress:
         cmd = [
             "pngquant", "--force",
             "--quality", quality,
-            "--output", out,
-            self.source_image,
+            "--output", str(out),
+            str(self.source_image),
         ]
         # fmt: on
         self.run_cmd(cmd)
@@ -143,17 +134,17 @@ class Compress:
 
     def compress_webp(self, output_name: str) -> Path:
         out: Path = self._output_dir / Path(output_name)
-        cmd = ["cwebp", "-q", self.quality, self.source_image, "-o", out]
+        cmd = ["cwebp", "-q", str(self.quality), str(self.source_image), "-o", str(out)]
         self.run_cmd(cmd)
         return out
 
     @staticmethod
-    def run_cmd(cmd: list) -> None:
-        cmd: list[str] = [str(i) for i in cmd]
+    def run_cmd(cmd: list[str]) -> None:
+        cmd = [str(i) for i in cmd]
         subprocess.run(cmd, capture_output=True)
 
     @staticmethod
-    def create_new_name(name: pathlib.Path, suffix: str):
+    def create_new_name(name: Path, suffix: str) -> str:
         new_name = name.stem + suffix + name.suffix
         return new_name
 
