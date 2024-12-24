@@ -177,12 +177,14 @@ class Compress:
         return dest_name, source_new_name
 
     def copy_move(self, dest_name: Path, source_new_name: Path) -> None:
-        if source_new_name and dest_name:
-            self.source_image.rename(source_new_name)
-            shutil.copy(source_new_name, dest_name)
-        elif dest_name:
-            shutil.copy(self.source_image, dest_name)
-
+        try:
+            if source_new_name and dest_name:
+                self.source_image.rename(source_new_name)
+                shutil.copy(source_new_name, dest_name)
+            elif dest_name:
+                shutil.copy(self.source_image, dest_name)
+        except shutil.SameFileError:
+            raise shutil.SameFileError (f"The source and destination files are the same, {dest_name}")
     def compress(self) -> ImageData:
         """
         Compresses the source image using the specified quality setting.

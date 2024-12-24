@@ -8,6 +8,7 @@ from .kompressor import humanize
 import concurrent.futures
 from pprint import pprint as pp  # noqa: F401
 from typing import Any
+import shutil
 
 
 QUALITY = 80
@@ -86,7 +87,7 @@ def kompressor(
     SOURCE can be one or more image files.
 
     By default, the compressed images are saved in a dir called 'kompressor',
-    unless overridden with the '-o' option.  It will be created if nessesary.
+    unless overridden with the '-o' option.  It will be created if necessary.
 
     Supported formats: png, jpeg, webp.
 
@@ -158,6 +159,10 @@ def kompressor(
                 image_data = future.result()
             except FileNotFoundError as e:
                 click.secho(f"Command not found: {e}", fg="red")
+                sys.exit(1)
+            except shutil.SameFileError as e:
+                click.secho(f"{e}", fg="red")
+                click.secho('Try renaming the source image with the "-s" option.', fg="bright_red")
                 sys.exit(1)
             except OSError as e:
                 click.secho(e, fg="red")
