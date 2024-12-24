@@ -13,21 +13,22 @@ By default, if no options are used, the compressed file will be put in
 a subdir called "condensed" in the same dir as the source file.  It
 will be created if it doesn't exist.
 
-### Run
-`poetry run condenser --help`
 
-Or if installed,
+### Development
 
-`condenser --help`
+#### Run
+`uv run condenser --help`
 
-### Build
-`poetry build`
+#### Build
+`uv build`
 
-### Install
+#### Install
 `pipx install ./dist/condenser-XXXXX-py3-none-any.whl`
 
-### Install editable
-`pipx install --editable .`
+`uv tool install ./dist/condenser-XXXXX-py3-none-any.whl`
 
-### Tests
+#### Install editable
+`uv tool install --editable .`
+
+#### Tests
 `poetry run pytest`
