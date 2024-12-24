@@ -1,5 +1,5 @@
 
-# Condenser
+# Kompressor
 
 Compress, convert and resize images.
 
@@ -17,15 +17,15 @@ will be created if it doesn't exist.
 ### Development
 
 #### Run
-`uv run condenser --help`
+`uv run kompressor --help`
 
 #### Build
 `uv build`
 
 #### Install
-`pipx install ./dist/condenser-XXXXX-py3-none-any.whl`
+`pipx install ./dist/kompressor-XXXXX-py3-none-any.whl`
 
-`uv tool install ./dist/condenser-XXXXX-py3-none-any.whl`
+`uv tool install ./dist/kompressor-XXXXX-py3-none-any.whl`
 
 #### Install editable
 `uv tool install --editable .`

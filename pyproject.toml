@@ -1,5 +1,5 @@
 [project]
-name = "condenser"
+name = "kompressor"
 version = "0.2.2"
 description = "Compress and resize images"
 readme = "README.md"
@@ -12,7 +12,7 @@ dependencies = [
 ]
 
 [project.scripts]
-condenser = "condenser:condenser"
+kompressor = "kompressor:kompressor"
 
 [build-system]
 requires = ["hatchling"]

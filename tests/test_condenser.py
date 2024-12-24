@@ -1,9 +1,9 @@
 import pytest
 from click.testing import CliRunner
 from pathlib import Path
-from condenser.condenser import get_files_by_extension
-from condenser.condenser import humanize
-from condenser.condenser import Compress
+from kompressor.kompressor import get_files_by_extension
+from kompressor.kompressor import humanize
+from kompressor.kompressor import Compress
 import tempfile
 from pprint import pprint as pp
 import uuid

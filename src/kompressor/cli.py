@@ -3,8 +3,8 @@ import sys
 import click
 import pathlib
 from pathlib import Path
-from .condenser import Compress, ImageData  # type: ignore
-from .condenser import humanize
+from .kompressor import Compress, ImageData  # type: ignore
+from .kompressor import humanize
 import concurrent.futures
 from pprint import pprint as pp  # noqa: F401
 from typing import Any
@@ -28,16 +28,16 @@ CONTEXT_SETTINGS = {
 @click.option(
     "--output-dir",
     "-o",
-    default="condenser",
+    default="kompressor",
     type=click.Path(resolve_path=True, path_type=Path, file_okay=False),
-    help="Optional output dir.  Defaults to 'condenser'.",
+    help='Optional output dir, defaults to "kompressor".',
 )
 @click.option(
     "--quality",
     "-q",
     type=click.IntRange(1, 100),
     default=QUALITY,
-    help=f"Quality of the compressed image(s), default is {QUALITY}",
+    help=f"Quality of the compressed image(s), default is {QUALITY}.",
 )
 @click.option(
     "--destination-rename",
@@ -68,10 +68,10 @@ CONTEXT_SETTINGS = {
 @click.option(
     "--human/--json",
     default=True,
-    help="Output format in human readable or json, default: human",
+    help="Output format in human readable or json, default: human.",
 )
 @click.version_option()
-def condenser(
+def kompressor(
     source: tuple[pathlib.Path, ...],
     output_dir: pathlib.Path,
     quality: int,
@@ -81,23 +81,23 @@ def condenser(
     size: tuple[int, int],
     human: bool,
 ) -> None:
-    """Minify/resize/convert images using lossy compression.
+    """🪗 Minify/resize/convert images using lossy compression.
 
     SOURCE can be one or more image files.
 
-    By default, the compressed images are saved in a dir called 'condenser',
+    By default, the compressed images are saved in a dir called 'kompressor',
     unless overridden with the '-o' option.  It will be created if nessesary.
 
     Supported formats: png, jpeg, webp.
 
     To generate compressed images with different quality settings, use a range.
     The following example generates 3 compressed images with different quality
-    settings and puts them in the 'condenser' directory.
+    settings and puts them in the 'kompressor' directory.
 
     \b
     for QUALITY in 10 50 80; do
       echo "Quality: $QUALITY --------------------";
-      condenser --quality=$QUALITY --destination-rename "-$QUALITY" *.png;
+      kompressor --quality=$QUALITY --destination-rename "-$QUALITY" *.png;
     done
 
     \b
