@@ -1,6 +1,6 @@
 [project]
 name = "condenser"
-version = "0.2.1"
+version = "0.2.2"
 description = "Compress and resize images"
 readme = "README.md"
 authors = [
