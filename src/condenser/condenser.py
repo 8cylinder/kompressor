@@ -1,6 +1,6 @@
 import pathlib
 from pathlib import Path
-import tempfile
+import shutil
 import subprocess
 from dataclasses import dataclass
 
@@ -44,9 +44,7 @@ def humanize(size: int) -> str:
 
 
 class Compress:
-    """
-    A class to compress a single image using specified quality
-    settings.
+    """A class to compress a single image using specified quality settings.
 
     This class supports JPEG, PNG, and WEBP formats, utilizing
     external tools (jpegoptim, pngquant, webp) for compression.
@@ -64,20 +62,13 @@ class Compress:
     def __init__(
         self, source_image: pathlib.Path, quality: int, output_dir: pathlib.Path
     ):
-        self.source_image: pathlib.Path = source_image
+        self.source_image = source_image
         self.quality: int = quality
-        self._output_dir: pathlib.Path = output_dir
-        self._dest_rename: str = ""
+        self.output_dir = output_dir
+        self.dest_extra_name: str = ""
+        self.source_extra_name: str = ""
 
-    @property
-    def dest_rename(self) -> str:
-        return self._dest_rename
-
-    @dest_rename.setter
-    def dest_rename(self, dest_rename: str) -> None:
-        self._dest_rename = dest_rename
-
-    def _get_type(self) -> str:
+    def get_type(self) -> str:
         image_type: str = self.source_image.suffix
         image_type = image_type[1:].lower()  # remove the leading dot
         if image_type in self.types:
@@ -85,7 +76,7 @@ class Compress:
         else:
             raise ValueError(f"Unsupported image type: {image_type}")
 
-    def compress_jpeg(self, output_name: str) -> Path:
+    def compress_jpeg(self, image: Path) -> Path:
         """Compresses a JPEG image to a specified quality and moves it to the
         output directory with a new name.
 
@@ -96,57 +87,75 @@ class Compress:
         Raises:
             subprocess.CalledProcessError: If the `jpegoptim` command fails.
         """
-        with tempfile.TemporaryDirectory() as tmp:
-            # fmt: off
-            cmd = [
-                "jpegoptim", "--quiet", "--overwrite", "--strip-exif",
-                "--max", str(self.quality),
-                "--dest", tmp,
-                str(self.source_image),
-            ]
-            # fmt: on
+        # fmt: off
+        cmd = [
+            "jpegoptim", "--quiet", "--overwrite", "--strip-exif",
+            "--max", str(self.quality),
+            #"--dest", tmp,
+            str(image),
+        ]
+        # fmt: on
 
-            # compress the image to the tmp dir
-            self.run_cmd(cmd)
+        # compress the image to the tmp dir
+        self.run_cmd(cmd)
+        return image
 
-            compressed_image: Path = Path(tmp) / self.source_image.name
-
-            # move the compressed image to the output directory
-            compressed_image = compressed_image.rename(
-                self._output_dir / Path(output_name)
-            )
-            compressed_image = compressed_image.absolute()
-            return compressed_image
-
-    def compress_png(self, output_name: str) -> Path:
-        out: Path = self._output_dir / Path(output_name)
+    def compress_png(self, image: Path) -> Path:
         quality: str = f"0-{self.quality}"
         # fmt: off
         cmd = [
             "pngquant", "--force",
             "--quality", quality,
-            "--output", str(out),
-            str(self.source_image),
+            "--output", str(image),
+            str(image),
         ]
         # fmt: on
         self.run_cmd(cmd)
-        return out
+        return image
 
-    def compress_webp(self, output_name: str) -> Path:
-        out: Path = self._output_dir / Path(output_name)
-        cmd = ["cwebp", "-q", str(self.quality), str(self.source_image), "-o", str(out)]
+    def compress_webp(self, image: Path) -> Path:
+        # fmt: off
+        cmd = [
+            "cwebp",
+            "-q", str(self.quality),
+            "-o", str(image),
+            str(image),
+       ]
+        # fmt: on
         self.run_cmd(cmd)
-        return out
+        return image
 
     @staticmethod
     def run_cmd(cmd: list[str]) -> None:
         cmd = [str(i) for i in cmd]
         subprocess.run(cmd, capture_output=True)
 
-    @staticmethod
-    def create_new_name(name: Path, suffix: str) -> str:
-        new_name = name.stem + suffix + name.suffix
+    def create_new_name(self, dest_dir: Path, suffix: str) -> Path:
+        name = self.source_image
+        base_name = name.stem + suffix + name.suffix
+        new_name = Path(name.parent, dest_dir, base_name)
         return new_name
+
+    def make_filenames(self) -> tuple[Path, Path]:
+        """Create new file names for the destination and new source name."""
+        source_new_name: Path = None
+        # dest_name: Path = None
+        source_name = self.source_image
+        if self.source_extra_name:
+            here = source_name.parent
+            source_new_name = self.create_new_name(here, self.source_extra_name)
+        dest_name = self.create_new_name(self.output_dir, self.dest_extra_name)
+        return dest_name, source_new_name
+
+    def copy_move(self, dest_name: Path, source_new_name: Path) -> None:
+        if source_new_name and dest_name:
+            # print("A) move", self.source_image, "-->", source_new_name)
+            # print(f"A) copy {source_new_name} -> {dest_name}")
+            self.source_image.rename(source_new_name)
+            shutil.copy(source_new_name, dest_name)
+        elif dest_name:
+            # print(f"B) copy {self.source_image} -> {dest_name}")
+            shutil.copy(self.source_image, dest_name)
 
     def compress(self) -> ImageData:
         """
@@ -179,29 +188,27 @@ class Compress:
         original_size: int = self.source_image.stat().st_size
 
         # create the output dir if it doesn't exist
-        if self._output_dir:
+        if self.output_dir:
             try:
-                self._output_dir.mkdir(parents=True)
+                self.output_dir.mkdir(parents=True, exist_ok=True)
             except FileExistsError:
                 # in multi-threaded environments, this directory may have been created
                 pass
 
-        # if the output_dir is not set, set it to the current dir
-        if not self._output_dir:
-            self._output_dir = Path(".").absolute()
+        dest_name, source_new_name = self.make_filenames()
 
-        output_name: str = self.source_image.name
-        # rename the output
-        if self._dest_rename:
-            output_name = self.create_new_name(Path(output_name), self._dest_rename)
+        self.copy_move(dest_name, source_new_name)
 
-        image_type: str = self._get_type()
+        # print(f"compress {dest_name}")
+        # exit()
+
+        image_type: str = self.get_type()
         if image_type == "jpeg":
-            compressed_image = self.compress_jpeg(output_name)
+            compressed_image = self.compress_jpeg(dest_name)
         elif image_type == "png":
-            compressed_image = self.compress_png(output_name)
+            compressed_image = self.compress_png(dest_name)
         elif image_type == "webp":
-            compressed_image = self.compress_webp(output_name)
+            compressed_image = self.compress_webp(dest_name)
         else:
             raise ValueError(f"Unsupported image type: {image_type}")
 

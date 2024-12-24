@@ -28,17 +28,29 @@ CONTEXT_SETTINGS = {
 )
 @click.option("--quality", "-q", type=click.IntRange(1, 100), default=70)
 @click.option(
-    "--output-rename",
-    "-r",
+    "--destination-rename",
     type=click.STRING,
     help="Rename the output images to include this string.",
+)
+@click.option(
+    "--source-rename",
+    type=click.STRING,
+    help="Rename the original images to include this string.",
+)
+@click.option(
+    "--convert",
+    "-c",
+    type=click.Choice(["jpeg", "png", "webp"]),
+    help="Convert the image(s) to a different format.",
 )
 @click.version_option()
 def condenser(
     source: tuple[pathlib.Path, ...],
     output_dir: pathlib.Path,
     quality: int,
-    output_rename: str | None,
+    source_rename: str | None,
+    destination_rename: str | None,
+    convert: str | None,
 ) -> None:
     """Minify images to a smaller size using lossy compression.
 
@@ -71,15 +83,17 @@ def condenser(
     for f in image_files:
         if len(f.name) > longest:
             longest = len(f.name)
-    longest = longest + len(output_rename) if output_rename else longest
+    longest = longest + len(destination_rename) if destination_rename else longest
 
     # Use ThreadPoolExecutor to process images in parallel
     with concurrent.futures.ThreadPoolExecutor() as executor:
         futures = []
         for image_file in image_files:
             image = Compress(image_file, quality, output_dir)
-            if output_rename:
-                image.dest_rename = output_rename
+            if destination_rename:
+                image.dest_extra_name = destination_rename
+            if source_rename:
+                image.source_extra_name = source_rename
 
             # Submit the compression task
             future = executor.submit(image.compress)
@@ -89,7 +103,10 @@ def condenser(
             try:
                 image_data = future.result()
             except FileNotFoundError as e:
-                print(f"Command not found: {e}")
+                click.secho(f"Command not found: {e}", fg="red")
+                sys.exit(1)
+            except OSError as e:
+                click.secho(e, fg="red")
                 sys.exit(1)
 
             print(
