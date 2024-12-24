@@ -3,8 +3,9 @@
 
 **Compress, convert and resize images.**
 
-By default, the compressed images are saved in a dir called 'kompressor',
-unless overridden with the '-o' option.  It will be created if necessary.
+By default, if the `--output` option is not used, the compressed file will be put in
+a subdir called "kompressor" in the same dir as the source file.  It
+will be created if it doesn't exist.
 
 Supported formats: png, jpeg, webp.
 
@@ -21,22 +22,29 @@ Eg, with an argument of `-ORIGINAL`, this file `image.jpg` would become
 
 ### Requirements
 
-These command line tools are required:
+Three command line tools are used for the actual compression, pngquant, jpegoptim and cwebp.  Kompressor assumes they exist and are in the PATH.
+
+They can be installed with the following commands.
+
+**Linux**:<br>
 `apt install pngquant jpegoptim webp`
 
+**Macos**:<br>
+`brew install pngquant jpegoptim webp`
 
-Compress, convert and resize images.
+Also [UV](https://docs.astral.sh/uv/) is required to build the tool.  It can be installed with pipx or curl.  See the [UV install docs](https://docs.astral.sh/uv/getting-started/installation/) for more info.
 
-Compress jpegs, pngs or webp images.  This uses pngquant, jpegoptim
-and cwebp to do the actual compression.
+### Installation
 
-The source filename and the output filename can be renamed and a
-destination dir can be specified.
+Installation is done from the git repo.  
 
-By default, if no options are used, the compressed file will be put in
-a subdir called "kompressor" in the same dir as the source file.  It
-will be created if it doesn't exist.
-
+``` bash
+cd /path/to/the/repo
+uv sync
+uv build
+uv tool install ./dist/kompressor-XXXXX-py3-none-any.whl
+# kompressor is now installed
+```
 
 ### Examples
 
