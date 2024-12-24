@@ -36,9 +36,9 @@ def humanize(size: int) -> str:
         index += 1
 
     if index >= 2:
-        pretty_size = round(size, 1)
+        pretty_size = round(precise_size, 1)
     else:
-        pretty_size = round(size)
+        pretty_size = round(precise_size)
 
     return f"{pretty_size}{units[index]}"
 
