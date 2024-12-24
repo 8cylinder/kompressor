@@ -15,7 +15,7 @@ class ImageData:
     source_image: Path
     original_size: int
     compressed_size: int
-    sizes: tuple[tuple[int, int], tuple[int, int]]
+    sizes: list[tuple[int, int]]
 
 
 def get_files_by_extension(path: str, wanted_filetypes: list[str]) -> list[Path]:
@@ -45,9 +45,7 @@ def humanize(size: int) -> str:
     return f"{pretty_size}{units[index]}"
 
 
-def resize_image(
-    image: Path, max_width: int, max_height: int
-) -> tuple[tuple[int, int], tuple[int, int]]:
+def resize_image(image: Path, max_width: int, max_height: int) -> list[tuple[int, int]]:
     """Resize an image to fit within max_width and max_height
     while maintaining aspect ratio."""
     original_size: tuple[int, int]
@@ -59,7 +57,23 @@ def resize_image(
         new_size = img.size
         # Save the resized image to the output path
         img.save(image)
-    return original_size, new_size
+    return [original_size, new_size]
+
+
+def image_dimensions(image: Path) -> list[tuple[int, int]]:
+    """Return the dimensions of an image."""
+    with Image.open(image) as img:
+        size: tuple[int, int] = img.size
+    return [size]
+
+
+def convert_image(image: Path, new_format: str) -> Path:
+    """Convert an image to a new format."""
+    new_image = image.with_suffix(f".{new_format}")
+    with Image.open(image) as img:
+        img.save(new_image)
+    image.unlink()
+    return new_image
 
 
 class Compress:
@@ -87,16 +101,17 @@ class Compress:
         self.dest_extra_name: str = ""
         self.source_extra_name: str = ""
         self.size = (0, 0)
+        self.convert: str | None = ""
 
-    def get_type(self) -> str:
-        image_type: str = self.source_image.suffix
+    def get_type(self, image: Path) -> str:
+        image_type: str = image.suffix
         image_type = image_type[1:].lower()  # remove the leading dot
         if image_type in self.types:
             return self.types[image_type]
         else:
             raise ValueError(f"Unsupported image type: {image_type}")
 
-    def compress_jpeg(self, image: Path) -> Path:
+    def compress_jpeg(self, image: Path) -> None:
         """Compresses a JPEG image to a specified quality and moves it to the
         output directory with a new name.
 
@@ -111,16 +126,12 @@ class Compress:
         cmd = [
             "jpegoptim", "--quiet", "--overwrite", "--strip-exif",
             "--max", str(self.quality),
-            #"--dest", tmp,
             str(image),
         ]
         # fmt: on
-
-        # compress the image to the tmp dir
         self.run_cmd(cmd)
-        return image
 
-    def compress_png(self, image: Path) -> Path:
+    def compress_png(self, image: Path) -> None:
         quality: str = f"0-{self.quality}"
         # fmt: off
         cmd = [
@@ -131,19 +142,17 @@ class Compress:
         ]
         # fmt: on
         self.run_cmd(cmd)
-        return image
 
-    def compress_webp(self, image: Path) -> Path:
+    def compress_webp(self, image: Path) -> None:
         # fmt: off
         cmd = [
             "cwebp",
             "-q", str(self.quality),
             "-o", str(image),
             str(image),
-       ]
+        ]
         # fmt: on
         self.run_cmd(cmd)
-        return image
 
     @staticmethod
     def run_cmd(cmd: list[str]) -> None:
@@ -169,12 +178,9 @@ class Compress:
 
     def copy_move(self, dest_name: Path, source_new_name: Path) -> None:
         if source_new_name and dest_name:
-            # print("A) move", self.source_image, "-->", source_new_name)
-            # print(f"A) copy {source_new_name} -> {dest_name}")
             self.source_image.rename(source_new_name)
             shutil.copy(source_new_name, dest_name)
         elif dest_name:
-            # print(f"B) copy {self.source_image} -> {dest_name}")
             shutil.copy(self.source_image, dest_name)
 
     def compress(self) -> ImageData:
@@ -216,21 +222,25 @@ class Compress:
                 # may have been created
                 pass
 
-        dest_name, source_new_name = self.make_filenames()
-        self.copy_move(dest_name, source_new_name)
-        resized = False
-        sizes = ((0, 0), (0, 0))
-        if self.size != (0, 0):
-            sizes = resize_image(dest_name, self.size[0], self.size[1])
-            resized = True
+        compressed_image, renamed_source_image = self.make_filenames()
+        self.copy_move(compressed_image, renamed_source_image)
 
-        image_type: str = self.get_type()
+        if self.convert:
+            compressed_image = convert_image(compressed_image, self.convert)
+
+        resized = False
+        if self.size != (0, 0):
+            sizes = resize_image(compressed_image, self.size[0], self.size[1])
+        else:
+            sizes = image_dimensions(compressed_image)
+
+        image_type: str = self.get_type(compressed_image)
         if image_type == "jpeg":
-            compressed_image = self.compress_jpeg(dest_name)
+            self.compress_jpeg(compressed_image)
         elif image_type == "png":
-            compressed_image = self.compress_png(dest_name)
+            self.compress_png(compressed_image)
         elif image_type == "webp":
-            compressed_image = self.compress_webp(dest_name)
+            self.compress_webp(compressed_image)
         else:
             raise ValueError(f"Unsupported image type: {image_type}")
 
