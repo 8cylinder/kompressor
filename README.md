@@ -10,7 +10,7 @@ The source filename and the output filename can be renamed and a
 destination dir can be specified.
 
 By default, if no options are used, the compressed file will be put in
-a subdir called "condensed" in the same dir as the source file.  It
+a subdir called "kompressor" in the same dir as the source file.  It
 will be created if it doesn't exist.
 
 
