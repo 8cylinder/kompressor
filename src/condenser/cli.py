@@ -6,44 +6,46 @@ from .condenser import Compress
 from .condenser import humanize
 import concurrent.futures
 
+
+QUALITY = 80
+
+# fmt: off
 CONTEXT_SETTINGS = {
     "help_option_names": ["-h", "--help"],
     "token_normalize_func": lambda x: x.lower(),
 }
-
-
 @click.command(context_settings=CONTEXT_SETTINGS)
 @click.argument(
-    "source",
+    "source", required=True, nargs=-1,
     type=click.Path(resolve_path=True, path_type=Path, exists=True, dir_okay=False),
-    required=True,
-    nargs=-1,
 )
 @click.option(
-    "--output-dir",
-    "-o",
+    "--output-dir", "-o", default="condenser",
     type=click.Path(resolve_path=True, path_type=Path, file_okay=False),
-    default="condenser",
     help="Optional output dir.  Defaults to 'condenser'.",
 )
-@click.option("--quality", "-q", type=click.IntRange(1, 100), default=70)
 @click.option(
-    "--destination-rename",
-    type=click.STRING,
+    "--quality", "-q", type=click.IntRange(1, 100), default=QUALITY,
+    help=f"Quality of the compressed image(s), default is {QUALITY}",
+)
+@click.option(
+    "--destination-rename", type=click.STRING,
     help="Rename the output images to include this string.",
 )
 @click.option(
-    "--source-rename",
-    type=click.STRING,
+    "--source-rename", type=click.STRING,
     help="Rename the original images to include this string.",
 )
 @click.option(
-    "--convert",
-    "-c",
-    type=click.Choice(["jpeg", "png", "webp"]),
+    "--convert", "-c", type=click.Choice(["jpeg", "png", "webp"]),
     help="Convert the image(s) to a different format.",
 )
+@click.option(
+    '--size', '-s', type=(int, int), default=(0, 0),
+    help="Resize the image(s) to the specified dimensions.",
+)
 @click.version_option()
+# fmt: on
 def condenser(
     source: tuple[pathlib.Path, ...],
     output_dir: pathlib.Path,
@@ -51,6 +53,7 @@ def condenser(
     source_rename: str | None,
     destination_rename: str | None,
     convert: str | None,
+    size: tuple[int, int],
 ) -> None:
     """Minify images to a smaller size using lossy compression.
 
@@ -94,6 +97,7 @@ def condenser(
                 image.dest_extra_name = destination_rename
             if source_rename:
                 image.source_extra_name = source_rename
+            image.size = size
 
             # Submit the compression task
             future = executor.submit(image.compress)
@@ -109,6 +113,9 @@ def condenser(
                 click.secho(e, fg="red")
                 sys.exit(1)
 
+            sizes = ""
+            if size != (0, 0):
+                sizes = f" | {image_data.sizes[0][0]}x{image_data.sizes[0][1]} -> {image_data.sizes[1][0]}x{image_data.sizes[1][1]}"
             print(
                 image_data.compressed_image.name.ljust(longest + 2),
                 humanize(image_data.original_size).rjust(6),
@@ -118,4 +125,5 @@ def condenser(
                 str(image_data.original_size).rjust(8),
                 "->",
                 str(image_data.compressed_size).rjust(8),
+                sizes,
             )

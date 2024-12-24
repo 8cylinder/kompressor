@@ -3,7 +3,8 @@ from pathlib import Path
 import shutil
 import subprocess
 from dataclasses import dataclass
-
+from PIL import Image
+from pprint import pprint as pp  # noqa: F401
 
 # from IPython.core.debugger import set_trace; set_trace()
 
@@ -14,6 +15,7 @@ class ImageData:
     source_image: Path
     original_size: int
     compressed_size: int
+    sizes: tuple[tuple[int, int], tuple[int, int]]
 
 
 def get_files_by_extension(path: str, wanted_filetypes: list[str]) -> list[Path]:
@@ -43,6 +45,23 @@ def humanize(size: int) -> str:
     return f"{pretty_size}{units[index]}"
 
 
+def resize_image(
+    image: Path, max_width: int, max_height: int
+) -> tuple[tuple[int, int], tuple[int, int]]:
+    """Resize an image to fit within max_width and max_height
+    while maintaining aspect ratio."""
+    original_size: tuple[int, int]
+    new_size: tuple[int, int]
+    with Image.open(image) as img:
+        original_size = img.size
+        # Calculate the new size preserving the aspect ratio
+        img.thumbnail((max_width, max_height))
+        new_size = img.size
+        # Save the resized image to the output path
+        img.save(image)
+    return original_size, new_size
+
+
 class Compress:
     """A class to compress a single image using specified quality settings.
 
@@ -67,6 +86,7 @@ class Compress:
         self.output_dir = output_dir
         self.dest_extra_name: str = ""
         self.source_extra_name: str = ""
+        self.size = (0, 0)
 
     def get_type(self) -> str:
         image_type: str = self.source_image.suffix
@@ -192,15 +212,17 @@ class Compress:
             try:
                 self.output_dir.mkdir(parents=True, exist_ok=True)
             except FileExistsError:
-                # in multi-threaded environments, this directory may have been created
+                # in multi-threaded environments, this directory
+                # may have been created
                 pass
 
         dest_name, source_new_name = self.make_filenames()
-
         self.copy_move(dest_name, source_new_name)
-
-        # print(f"compress {dest_name}")
-        # exit()
+        resized = False
+        sizes = ((0, 0), (0, 0))
+        if self.size != (0, 0):
+            sizes = resize_image(dest_name, self.size[0], self.size[1])
+            resized = True
 
         image_type: str = self.get_type()
         if image_type == "jpeg":
@@ -215,6 +237,6 @@ class Compress:
         compressed_size: int = compressed_image.stat().st_size
 
         data = ImageData(
-            compressed_image, self.source_image, original_size, compressed_size
+            compressed_image, self.source_image, original_size, compressed_size, sizes
         )
         return data
