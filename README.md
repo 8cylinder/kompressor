@@ -3,17 +3,32 @@
 
 **Compress, convert and resize images.**
 
-By default, if the `--output` option is not used, the compressed file will be put in
-a subdir called "kompressor" in the same dir as the source file.  It
-will be created if it doesn't exist.
 
-Supported formats: png, jpeg, webp.
+### Features
+
+**Rename** — Modify the image name in multiple ways.  Add a string to
+the source image, the compressed image, or both and put them in the
+current dir or a subdir.
+
+**Compress** — Compress the images on a 1-100 scale, with a default of 80.
+
+**Resize** — Set a max width and height for the image.  The image will
+be resized to fit within the bounds while maintaining the aspect
+ratio.
+
+**Trim** — Trim pixels from the sides of the image, by specifiying a
+number of pixels from each site.  This is particularly usefull for
+removing bad lines from the edges of images.
+
+**Convert** — Convert the image to a different format.  Supported
+formats are png, jpeg and webp.
+
 
 ### Renaming
 
 Files can optionally have a string added to the end of the filename using
 the `-s` and `-d` options.  The `-d` option renames the compressed image
-and the `-s` option renames the source image.  These are applied whether it's 
+and the `-s` option renames the source image.  These are applied whether it's
 put into a subdir or not.
 
 Eg, with an argument of `-ORIGINAL`, this file `image.jpg` would become
@@ -22,7 +37,9 @@ Eg, with an argument of `-ORIGINAL`, this file `image.jpg` would become
 
 ### Requirements
 
-Three command line tools are used for the actual compression, pngquant, jpegoptim and cwebp.  Kompressor assumes they exist and are in the PATH.
+Three command line tools are used for the actual compression,
+pngquant, jpegoptim and cwebp.  Kompressor assumes they exist and are
+in the PATH.
 
 They can be installed with the following commands.
 
@@ -32,11 +49,15 @@ They can be installed with the following commands.
 **Macos**:<br>
 `brew install pngquant jpegoptim webp`
 
-Also [UV](https://docs.astral.sh/uv/) is required to build the tool.  It can be installed with pipx or curl.  See the [UV install docs](https://docs.astral.sh/uv/getting-started/installation/) for more info.
+Also [UV](https://docs.astral.sh/uv/) is required to build the tool.
+It can be installed with pipx or curl.  See the [UV install
+docs](https://docs.astral.sh/uv/getting-started/installation/) for
+more info.
+
 
 ### Installation
 
-Installation is done from the git repo.  
+Installation is done from the git repo.
 
 ``` bash
 cd /path/to/the/repo
@@ -46,9 +67,17 @@ uv tool install ./dist/kompressor-XXXXX-py3-none-any.whl
 # kompressor is now installed
 ```
 
-### Examples
 
-**Basic usage** - compress single or multiple images.  This will create the `kompressor` dir and put the compressed image in it.
+### Usage
+
+By default, if the `--output` option is not used, the compressed file
+will be put in a subdir called "kompressor" in the same dir as the
+source file.  It will be created if it doesn't exist.
+
+Supported formats: png, jpeg, webp.
+
+**Basic usage** — compress single or multiple images.  This will
+create the `kompressor` dir and put the compressed image in it.
 
 ```bash
 # single image
@@ -60,7 +89,7 @@ kompressor file1.png file2.png file3.png
 kompressor *.png
 ```
 
-**Renaming files** - add a string to the end of the filename.
+**Renaming files** — add a string to the end of the filename.
 
 ```bash
 kompressor --destination-rename "-COMPRESSED" image.png
@@ -75,7 +104,9 @@ kompressor --source-rename "-ORIGINAL" --destination-rename "-COMPRESSED" image.
 # original image:       ./image-ORIGINAL.png
 ```
 
-Setting the `--output` option to `.` will put the compressed image in the same dir as the source image.  If you don't specify a rename flag, you will get an error about the file already existing.
+Setting the `--output` option to `.` will put the compressed image in
+the same dir as the source image.  If you don't specify a rename flag,
+you will get an error about the file already existing.
 
 ```bash
 kompressor --output . --source-rename "-ORIGINAL" image.png
@@ -87,13 +118,13 @@ kompressor --output . --source-rename "-ORIGINAL" --destination-rename "-COMPRES
 # original image:       ./image-ORIGINAL.png
 ```
 
-To generate multiple compressed images with different quality settings, use a range.
-The following example generates 3 compressed images with different quality
-settings and puts them in the 'kompressor' directory.
+To generate multiple compressed images with different quality
+settings, use a range.  The following example generates 3 compressed
+images with different quality settings and puts them in the
+'kompressor' directory.
 
 ```bash
 for QUALITY in 10 50 80; do
-  echo "Quality: $QUALITY --------------------";
   kompressor --quality=$QUALITY --destination-rename "-$QUALITY" *.png;
 done
 
@@ -101,6 +132,35 @@ done
 # ./kompressor/image-50.png
 # ./kompressor/image-80.png
 ```
+
+**Trim** — Cromp the image by removing a number of pixels from each side.  The format for trimmng is `t10,r10,b10,l10`.  This trims 10 pixes from the top, right, bottom and left sides.  Use a comma to separate the values.  Not all fields are required.
+
+```bash
+# trim 10 pixels from the top, right, bottom and left sides
+kompressor --trim t10,r10,b10,l10 image.png
+# trim 1 pixel from the top and 3 from the right side
+kompressor --trim t1,r3 image.png
+```
+
+**Resize** — Scale the image to fit within the bounds of the width and height.  The aspect ratio is maintained.
+
+```bash
+kompressor --resize 1000x1000 image.png
+```
+
+**Convert** — Convert the image to a different format.  Supported formats are png, jpeg and webp.
+
+```bash
+# convert image.png to image.webp
+kompressor --convert webp image.png
+# new compressed image: ./kompressor/image.webp
+# original image:       ./image.png
+
+kompressor --convert png image.jpg -o .
+# new compressed image: ./image.png
+# original image:       ./image.jpg
+```
+
 
 
 ### Development

@@ -71,6 +71,10 @@ CONTEXT_SETTINGS = {
     default=True,
     help="Output format in human readable or json, default: human.",
 )
+@click.option(
+    "--trim",
+    help='Trim pixels from the edges of the image. format: "tINT,rINT,bINT,lINT"',
+)
 @click.version_option()
 def kompressor(
     source: tuple[pathlib.Path, ...],
@@ -81,6 +85,7 @@ def kompressor(
     convert: str | None,
     size: tuple[int, int],
     human: bool,
+    trim: str | None,
 ) -> None:
     """🪗 Minify/resize/convert images using lossy compression.
 
@@ -90,16 +95,6 @@ def kompressor(
     unless overridden with the '-o' option.  It will be created if necessary.
 
     Supported formats: png, jpeg, webp.
-
-    To generate compressed images with different quality settings, use a range.
-    The following example generates 3 compressed images with different quality
-    settings and puts them in the 'kompressor' directory.
-
-    \b
-    for QUALITY in 10 50 80; do
-      echo "Quality: $QUALITY --------------------";
-      kompressor --quality=$QUALITY --destination-rename "-$QUALITY" *.png;
-    done
 
     \b
     Renaming
@@ -137,6 +132,12 @@ def kompressor(
         else longest_filename
     )
 
+    trims = {}
+    if trim:
+        trims = {"t": 0, "r": 0, "b": 0, "l": 0}
+        values = trim.split(",")
+        trims.update({i[0]: int(i[1:]) for i in values})
+
     # Use ThreadPoolExecutor to process images in parallel
     with concurrent.futures.ThreadPoolExecutor() as executor:
         futures = []
@@ -148,6 +149,7 @@ def kompressor(
                 image.source_extra_name = source_rename
             image.size = size
             image.convert = convert
+            image.trim = trims
 
             # Submit the compression task
             future = executor.submit(image.compress)
@@ -162,7 +164,10 @@ def kompressor(
                 sys.exit(1)
             except shutil.SameFileError as e:
                 click.secho(f"{e}", fg="red")
-                click.secho('Try renaming the source image with the "-s" option.', fg="bright_red")
+                click.secho(
+                    'Try renaming the source image with the "-s" option.',
+                    fg="bright_red",
+                )
                 sys.exit(1)
             except OSError as e:
                 click.secho(e, fg="red")
@@ -171,7 +176,8 @@ def kompressor(
             images_data.append(image_data)
 
         if human:
-            display_info(images_data)
+            table_data, column_widths = display_info(images_data)
+            print_table(table_data, column_widths)
         else:
             image_data_dict = json.dumps(image_data_2_dict(images_data))
             click.echo(image_data_dict)
@@ -194,7 +200,7 @@ def image_data_2_dict(images_data: list[ImageData]) -> dict[str, Any]:
     return image_data_dict
 
 
-def display_info(images_data: list[ImageData]) -> None:
+def display_info(images_data: list[ImageData]) -> tuple[list[list[str]], list[int]]:
     column_widths = [0 for i in range(50)]
     table_data = []
     arrow = " -> "
@@ -232,10 +238,11 @@ def display_info(images_data: list[ImageData]) -> None:
         text = text + sizes
 
         table_data.append(text)
+
         for i, col in enumerate(text):
             if len(col) > column_widths[i]:
                 column_widths[i] = len(col)
-    print_table(table_data, column_widths)
+    return table_data, column_widths
 
 
 def print_table(table_data: list[list[str]], column_widths: list[int]) -> None:

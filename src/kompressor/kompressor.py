@@ -76,6 +76,22 @@ def convert_image(image: Path, new_format: str) -> Path:
     return new_image
 
 
+def trim_image(image: Path, trim: dict) -> list[tuple[int, int]]:
+    # https://pillow.readthedocs.io/en/stable/reference/Image.html#PIL.Image.Image.crop
+    # left, upper, right, lower
+    with Image.open(image) as img:
+        original_size = img.size
+        left = trim["l"]
+        top = trim["t"]
+        right = trim["r"] + img.width
+        bottom = trim["b"] + img.height
+        # img = img.crop((trim["l"], trim["t"], trim["r"], trim["b"]))
+        img = img.crop((left, top, right, bottom))
+        img.save(image)
+        new_size = img.size
+    return [original_size, new_size]
+
+
 class Compress:
     """A class to compress a single image using specified quality settings.
 
@@ -102,6 +118,7 @@ class Compress:
         self.source_extra_name: str = ""
         self.size = (0, 0)
         self.convert: str | None = ""
+        self.trim: dict | None
 
     def get_type(self, image: Path) -> str:
         image_type: str = image.suffix
@@ -184,7 +201,10 @@ class Compress:
             elif dest_name:
                 shutil.copy(self.source_image, dest_name)
         except shutil.SameFileError:
-            raise shutil.SameFileError (f"The source and destination files are the same, {dest_name}")
+            raise shutil.SameFileError(
+                f"The source and destination files are the same, {dest_name}"
+            )
+
     def compress(self) -> ImageData:
         """
         Compresses the source image using the specified quality setting.
@@ -225,15 +245,20 @@ class Compress:
                 pass
 
         compressed_image, renamed_source_image = self.make_filenames()
+        original_dimensions = image_dimensions(compressed_image)
         self.copy_move(compressed_image, renamed_source_image)
+
+        if self.trim:
+            sizes = trim_image(compressed_image, self.trim)
 
         if self.convert:
             compressed_image = convert_image(compressed_image, self.convert)
+            sizes = image_dimensions(compressed_image)
 
         resized = False
         if self.size != (0, 0):
             sizes = resize_image(compressed_image, self.size[0], self.size[1])
-        else:
+        elif not sizes:
             sizes = image_dimensions(compressed_image)
 
         image_type: str = self.get_type(compressed_image)
