@@ -172,7 +172,7 @@ kompressor --convert png image.jpg -o .
 Output can be human readable or json using the `--human` (default) or `--json` flag.
 
 ``` bash
-uv run kompressor image-*.png  -c webp -d '-NEW' -x 1000 1000
+kompressor image-*.png  -c webp -d '-NEW' -x 1000 1000
 ```
 
 ```
@@ -195,7 +195,7 @@ Using the `--json` flag, output will look like this.  Note I'm using
 [jq](https://jqlang.github.io/jq/) to format the output.
 
 ``` bash
-uv run kompressor image-{3,4}.png -x 100 100 --json | jq
+kompressor image-{3,4}.png -x 100 100 --json | jq
 ```
 ``` json
 [
