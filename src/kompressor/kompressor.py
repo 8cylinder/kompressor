@@ -11,11 +11,13 @@ from pprint import pprint as pp  # noqa: F401
 
 @dataclass
 class ImageData:
+    original_image: Path
     compressed_image: Path
     source_image: Path
     original_size: int
     compressed_size: int
-    sizes: list[tuple[int, int]]
+    original_dimension: tuple[int, int]
+    compressed_dimension: tuple[int, int] | None
 
 
 def get_files_by_extension(path: str, wanted_filetypes: list[str]) -> list[Path]:
@@ -45,7 +47,7 @@ def humanize(size: int) -> str:
     return f"{pretty_size}{units[index]}"
 
 
-def resize_image(image: Path, max_width: int, max_height: int) -> list[tuple[int, int]]:
+def scale_image(image: Path, max_width: int, max_height: int) -> tuple[int, int]:
     """Resize an image to fit within max_width and max_height
     while maintaining aspect ratio."""
     original_size: tuple[int, int]
@@ -57,14 +59,14 @@ def resize_image(image: Path, max_width: int, max_height: int) -> list[tuple[int
         new_size = img.size
         # Save the resized image to the output path
         img.save(image)
-    return [original_size, new_size]
+    return new_size
 
 
-def image_dimensions(image: Path) -> list[tuple[int, int]]:
+def image_dimensions(image: Path) -> tuple[int, int]:
     """Return the dimensions of an image."""
     with Image.open(image) as img:
         size: tuple[int, int] = img.size
-    return [size]
+    return size
 
 
 def convert_image(image: Path, new_format: str) -> Path:
@@ -76,20 +78,18 @@ def convert_image(image: Path, new_format: str) -> Path:
     return new_image
 
 
-def trim_image(image: Path, trim: dict) -> list[tuple[int, int]]:
+def trim_image(image: Path, trim: dict[str, int]) -> tuple[int, int]:
     # https://pillow.readthedocs.io/en/stable/reference/Image.html#PIL.Image.Image.crop
     # left, upper, right, lower
     with Image.open(image) as img:
-        original_size = img.size
         left = trim["l"]
         top = trim["t"]
-        right = trim["r"] + img.width
-        bottom = trim["b"] + img.height
-        # img = img.crop((trim["l"], trim["t"], trim["r"], trim["b"]))
+        right = img.width - trim["r"]
+        bottom = img.height - trim["b"]
         img = img.crop((left, top, right, bottom))
         img.save(image)
-        new_size = img.size
-    return [original_size, new_size]
+        new_size: tuple[int, int] = img.size
+    return new_size
 
 
 class Compress:
@@ -118,7 +118,7 @@ class Compress:
         self.source_extra_name: str = ""
         self.size = (0, 0)
         self.convert: str | None = ""
-        self.trim: dict | None
+        self.trim: dict[str, int] = {}
 
     def get_type(self, image: Path) -> str:
         image_type: str = image.suffix
@@ -245,21 +245,19 @@ class Compress:
                 pass
 
         compressed_image, renamed_source_image = self.make_filenames()
-        original_dimensions = image_dimensions(compressed_image)
         self.copy_move(compressed_image, renamed_source_image)
+        original_dimensions = image_dimensions(compressed_image)
+        size = None
 
         if self.trim:
-            sizes = trim_image(compressed_image, self.trim)
+            size = trim_image(compressed_image, self.trim)
 
         if self.convert:
             compressed_image = convert_image(compressed_image, self.convert)
-            sizes = image_dimensions(compressed_image)
+            size = image_dimensions(compressed_image)
 
-        resized = False
         if self.size != (0, 0):
-            sizes = resize_image(compressed_image, self.size[0], self.size[1])
-        elif not sizes:
-            sizes = image_dimensions(compressed_image)
+            size = scale_image(compressed_image, self.size[0], self.size[1])
 
         image_type: str = self.get_type(compressed_image)
         if image_type == "jpeg":
@@ -274,6 +272,16 @@ class Compress:
         compressed_size: int = compressed_image.stat().st_size
 
         data = ImageData(
-            compressed_image, self.source_image, original_size, compressed_size, sizes
+            original_image=self.source_image,
+            compressed_image=compressed_image,
+            source_image=self.source_image,
+            original_size=original_size,
+            compressed_size=compressed_size,
+            original_dimension=original_dimensions,
+            compressed_dimension=size,
         )
+
+        # data = ImageData(
+        #     compressed_image, self.source_image, original_size, compressed_size, size
+        # )
         return data

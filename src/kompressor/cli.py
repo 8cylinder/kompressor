@@ -1,4 +1,3 @@
-import json
 import sys
 import click
 import pathlib
@@ -7,8 +6,8 @@ from .kompressor import Compress, ImageData  # type: ignore
 from .kompressor import humanize
 import concurrent.futures
 from pprint import pprint as pp  # noqa: F401
-from typing import Any
 import shutil
+import json
 
 
 QUALITY = 80
@@ -160,7 +159,7 @@ def kompressor(
             try:
                 image_data = future.result()
             except FileNotFoundError as e:
-                click.secho(f"Command not found: {e}", fg="red")
+                click.secho(f"File not found: {e}", fg="red")
                 sys.exit(1)
             except shutil.SameFileError as e:
                 click.secho(f"{e}", fg="red")
@@ -179,25 +178,32 @@ def kompressor(
             table_data, column_widths = display_info(images_data)
             print_table(table_data, column_widths)
         else:
-            image_data_dict = json.dumps(image_data_2_dict(images_data))
-            click.echo(image_data_dict)
+            click.echo(image_data_2_json(images_data))
 
 
-def image_data_2_dict(images_data: list[ImageData]) -> dict[str, Any]:
-    image_data_dict = {}
+def image_data_2_json(images_data: list[ImageData]) -> str:
+    image_data = []
     for image in images_data:
-        image_data_dict[image.compressed_image.name] = {
-            "bytes": {
-                "original_size": image.original_size,
-                "compressed_size": image.compressed_size,
-            },
-            "human": {
-                "original_size": humanize(image.original_size),
-                "compressed_size": humanize(image.compressed_size),
-            },
-            "dimensions": image.sizes,
-        }
-    return image_data_dict
+        image_data.append(
+            {
+                "files": {
+                    "source": str(image.source_image),
+                    "compressed": str(image.compressed_image),
+                },
+                "bytes": {
+                    "original_size": image.original_size,
+                    "compressed_size": image.compressed_size,
+                },
+                "human": {
+                    "original_size": humanize(image.original_size),
+                    "compressed_size": humanize(image.compressed_size),
+                },
+                "original_dimensions": image.original_dimension,
+                "compressed_dimensions": image.compressed_dimension,
+            }
+        )
+    json_data: str = json.dumps(image_data)
+    return json_data
 
 
 def display_info(images_data: list[ImageData]) -> tuple[list[list[str]], list[int]]:
@@ -205,35 +211,39 @@ def display_info(images_data: list[ImageData]) -> tuple[list[list[str]], list[in
     table_data = []
     arrow = " -> "
     x = " x "
+    current_dir = Path().absolute()
     for image_data in images_data:
+        compressed_partial_path = image_data.compressed_image.relative_to(current_dir)
         text = [
-            image_data.compressed_image.name,
-            "   ",
-            humanize(image_data.original_size),
+            click.style(str(image_data.source_image.name), fg="bright_blue"),
             arrow,
-            humanize(image_data.compressed_size),
+            click.style(str(compressed_partial_path), fg="bright_green"),
             " | ",
-            str(image_data.original_size),
+            click.style(humanize(image_data.original_size), fg="bright_blue"),
             arrow,
-            str(image_data.compressed_size),
+            click.style(humanize(image_data.compressed_size), fg="bright_green"),
+            " | ",
+            click.style(str(image_data.original_size), fg="bright_blue"),
+            arrow,
+            click.style(str(image_data.compressed_size), fg="bright_green"),
         ]
-        if len(image_data.sizes) == 1:
+        if image_data.compressed_dimension:
             sizes = [
                 " | ",
-                str(image_data.sizes[0][0]),
+                click.style(str(image_data.original_dimension[0]), fg="bright_blue"),
                 x,
-                str(image_data.sizes[0][1]),
+                click.style(str(image_data.original_dimension[1]), fg="bright_blue"),
+                arrow,
+                click.style(str(image_data.compressed_dimension[0]), fg="bright_green"),
+                x,
+                click.style(str(image_data.compressed_dimension[1]), fg="bright_green"),
             ]
         else:
             sizes = [
                 " | ",
-                str(image_data.sizes[0][0]),
+                click.style(str(image_data.original_dimension[0]), fg="bright_blue"),
                 x,
-                str(image_data.sizes[0][1]),
-                arrow,
-                str(image_data.sizes[1][0]),
-                x,
-                str(image_data.sizes[1][1]),
+                click.style(str(image_data.original_dimension[1]), fg="bright_blue"),
             ]
         text = text + sizes
 
@@ -246,9 +256,9 @@ def display_info(images_data: list[ImageData]) -> tuple[list[list[str]], list[in
 
 
 def print_table(table_data: list[list[str]], column_widths: list[int]) -> None:
-    for row in table_data:
+    for row in sorted(table_data):
         for i, col in enumerate(row):
-            if i == 0:
+            if i <= 3:
                 click.secho(col.ljust(column_widths[i]), nl=False)
             else:
                 click.secho(col.rjust(column_widths[i]), nl=False)

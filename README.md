@@ -133,7 +133,10 @@ done
 # ./kompressor/image-80.png
 ```
 
-**Trim** — Cromp the image by removing a number of pixels from each side.  The format for trimmng is `t10,r10,b10,l10`.  This trims 10 pixes from the top, right, bottom and left sides.  Use a comma to separate the values.  Not all fields are required.
+**Trim** — Cromp the image by removing a number of pixels from each
+side.  The format for trimmng is `t10,r10,b10,l10`.  This trims 10
+pixes from the top, right, bottom and left sides.  Use a comma to
+separate the values.  Not all fields are required.
 
 ```bash
 # trim 10 pixels from the top, right, bottom and left sides
@@ -142,13 +145,15 @@ kompressor --trim t10,r10,b10,l10 image.png
 kompressor --trim t1,r3 image.png
 ```
 
-**Resize** — Scale the image to fit within the bounds of the width and height.  The aspect ratio is maintained.
+**Resize** — Scale the image to fit within the bounds of the width and
+height.  The aspect ratio is maintained.
 
 ```bash
 kompressor --resize 1000x1000 image.png
 ```
 
-**Convert** — Convert the image to a different format.  Supported formats are png, jpeg and webp.
+**Convert** — Convert the image to a different format.  Supported
+formats are png, jpeg and webp.
 
 ```bash
 # convert image.png to image.webp
@@ -161,6 +166,85 @@ kompressor --convert png image.jpg -o .
 # original image:       ./image.jpg
 ```
 
+
+### Output
+
+Output can be human readable or json using the `--human` (default) or `--json` flag.
+
+``` bash
+uv run kompressor image-*.png  -c webp -d '-NEW' -x 1000 1000
+```
+
+```
+image-01.png -> kompressor/image-01-NEW.webp | 208K ->  49K |  213367 ->  50642 | 1538 x  985 -> 1000 x  640
+image-02.png -> kompressor/image-02-NEW.webp | 208K ->  49K |  213367 ->  50642 | 1538 x  985 -> 1000 x  640
+image-03.png -> kompressor/image-03-NEW.webp | 6.3M -> 118K | 6644905 -> 120922 | 2080 x 1880 -> 1000 x  904
+image-04.png -> kompressor/image-04-NEW.webp | 213K ->  52K |  217785 ->  53054 | 1538 x  985 -> 1000 x  640
+image-05.png -> kompressor/image-05-NEW.webp | 6.5M -> 165K | 6775038 -> 168756 | 2080 x 1880 -> 1000 x  904
+image-06.png -> kompressor/image-06-NEW.webp | 205K ->  49K |  209788 ->  49906 | 1538 x  985 -> 1000 x  640
+image-07.png -> kompressor/image-07-NEW.webp | 6.1M ->  72K | 6374536 ->  73738 | 2080 x 1880 -> 1000 x  904
+image-08.png -> kompressor/image-08-NEW.webp |  12K ->   3K |   11974 ->   2902 |  392 x  146 ->  392 x  146
+image-09.png -> kompressor/image-09-NEW.webp |  17K ->   6K |   17827 ->   6478 |  430 x  146 ->  430 x  146
+image-10.png -> kompressor/image-10-NEW.webp |  18K ->   5K |   18089 ->   5148 |  420 x  146 ->  420 x  146
+image-11.png -> kompressor/image-11-NEW.webp |   3K ->   3K |    3467 ->   3568 |  380 x  146 ->  380 x  146
+image-12.png -> kompressor/image-12-NEW.webp |   9K ->   3K |    9257 ->   2624 |  276 x  146 ->  276 x  146
+image-13.png -> kompressor/image-13-NEW.webp |   4K ->   4K |    4509 ->   4224 | 1000 x 1000 -> 1000 x 1000
+```
+
+Using the `--json` flag, output will look like this.  Note I'm using
+[jq](https://jqlang.github.io/jq/) to format the output.
+
+``` bash
+uv run kompressor image-{3,4}.png -x 100 100 --json | jq
+```
+``` json
+[
+  {
+    "files": {
+      "source": "/path/to/images/image-4.png",
+      "compressed": "/path/to/images/kompressor/image-4.png"
+    },
+    "bytes": {
+      "original_size": 217785,
+      "compressed_size": 1561
+    },
+    "human": {
+      "original_size": "213K",
+      "compressed_size": "2K"
+    },
+    "original_dimensions": [
+      1538,
+      985
+    ],
+    "compressed_dimensions": [
+      100,
+      64
+    ]
+  },
+  {
+    "files": {
+      "source": "/path/to/images/image-3.png",
+      "compressed": "/path/to/images/kompressor/image-3.png"
+    },
+    "bytes": {
+      "original_size": 6644905,
+      "compressed_size": 7233
+    },
+    "human": {
+      "original_size": "6.3M",
+      "compressed_size": "7K"
+    },
+    "original_dimensions": [
+      2080,
+      1880
+    ],
+    "compressed_dimensions": [
+      100,
+      90
+    ]
+  }
+]
+```
 
 
 ### Development
