@@ -2,12 +2,13 @@ import sys
 import click
 import pathlib
 from pathlib import Path
-from .kompressor import Compress, ImageData  # type: ignore
-from .kompressor import humanize
 import concurrent.futures
 from pprint import pprint as pp  # noqa: F401
 import shutil
 import json
+from .kompressor import Compress
+from .kompressor import ImageData
+from .kompressor import humanize
 
 
 QUALITY = 80
@@ -209,43 +210,43 @@ def image_data_2_json(images_data: list[ImageData]) -> str:
 def display_info(images_data: list[ImageData]) -> tuple[list[list[str]], list[int]]:
     column_widths = [0 for i in range(50)]
     table_data = []
+    compressed_sizes = []
     arrow = " -> "
     x = " x "
     current_dir = Path().absolute()
     for image_data in images_data:
+        percent = int(
+            round(image_data.compressed_size * 100 / image_data.original_size, 0)
+        )
         compressed_partial_path = image_data.compressed_image.relative_to(current_dir)
         text = [
+            # filename
             click.style(str(image_data.source_image.name), fg="bright_blue"),
             arrow,
             click.style(str(compressed_partial_path), fg="bright_green"),
             " | ",
+            # human file size
             click.style(humanize(image_data.original_size), fg="bright_blue"),
             arrow,
             click.style(humanize(image_data.compressed_size), fg="bright_green"),
             " | ",
-            click.style(str(image_data.original_size), fg="bright_blue"),
-            arrow,
-            click.style(str(image_data.compressed_size), fg="bright_green"),
+            # percent
+            click.style(f"{percent}%", fg="bright_green"),
+            " | ",
+            # dimensions
+            click.style(str(image_data.original_dimension[0]), fg="bright_blue"),
+            x,
+            click.style(str(image_data.original_dimension[1]), fg="bright_blue"),
         ]
         if image_data.compressed_dimension:
-            sizes = [
-                " | ",
-                click.style(str(image_data.original_dimension[0]), fg="bright_blue"),
-                x,
-                click.style(str(image_data.original_dimension[1]), fg="bright_blue"),
+            compressed_sizes = [
+                # changed dimensions
                 arrow,
                 click.style(str(image_data.compressed_dimension[0]), fg="bright_green"),
                 x,
                 click.style(str(image_data.compressed_dimension[1]), fg="bright_green"),
             ]
-        else:
-            sizes = [
-                " | ",
-                click.style(str(image_data.original_dimension[0]), fg="bright_blue"),
-                x,
-                click.style(str(image_data.original_dimension[1]), fg="bright_blue"),
-            ]
-        text = text + sizes
+        text = text + compressed_sizes
 
         table_data.append(text)
 
