@@ -75,6 +75,12 @@ CONTEXT_SETTINGS = {
     "--trim",
     help='Trim pixels from the edges of the image. format: "tINT,rINT,bINT,lINT"',
 )
+@click.option(
+    "--strip-exif",
+    "-e",
+    is_flag=True,
+    help="(Experimental) Strip all exif tags.",
+)
 @click.version_option()
 def kompressor(
     source: tuple[pathlib.Path, ...],
@@ -86,6 +92,7 @@ def kompressor(
     size: tuple[int, int],
     human: bool,
     trim: str | None,
+    strip_exif: bool,
 ) -> None:
     """🪗 Minify/resize/convert images using lossy compression.
 
@@ -114,6 +121,7 @@ def kompressor(
     \b
     These command line tools are required:
     `apt install pngquant jpegoptim webp`
+    `brew install pngquant jpegoptim webp`
     """
     image_types = [".png", ".jpeg", ".jpg", ".webp"]
     image_files: list[pathlib.Path] = []
@@ -150,6 +158,7 @@ def kompressor(
             image.size = size
             image.convert = convert
             image.trim = trims
+            image.strip_exif = strip_exif
 
             # Submit the compression task
             future = executor.submit(image.compress)
@@ -176,7 +185,7 @@ def kompressor(
             images_data.append(image_data)
 
         if human:
-            table_data, column_widths = display_info(images_data)
+            table_data, column_widths = display_info(images_data, strip_exif)
             print_table(table_data, column_widths)
         else:
             click.echo(image_data_2_json(images_data))
@@ -207,36 +216,48 @@ def image_data_2_json(images_data: list[ImageData]) -> str:
     return json_data
 
 
-def display_info(images_data: list[ImageData]) -> tuple[list[list[str]], list[int]]:
+def display_info(
+    images_data: list[ImageData], strip_exif
+) -> tuple[list[list[str]], list[int]]:
     column_widths = [0 for i in range(50)]
     table_data = []
     compressed_sizes = []
+    bar = " | "
     arrow = " -> "
-    x = " x "
+    x = "x"
     current_dir = Path().absolute()
     for image_data in images_data:
         percent = int(
             round(image_data.compressed_size * 100 / image_data.original_size, 0)
         )
+        source_name = snip(image_data.source_image.name, 30, 0.3)
         compressed_partial_path = image_data.compressed_image.relative_to(current_dir)
+        compressed_name = f"{compressed_partial_path.parent}/{snip(compressed_partial_path.name, 30, 0.3)}"
+
+        stripped = 'N'
+        if image_data.exif_stripped:
+            stripped = click.style("EXIF stripped", fg="bright_green")
+
         text = [
             # filename
-            click.style(str(image_data.source_image.name), fg="bright_blue"),
+            click.style(str(source_name), fg="bright_blue"),
             arrow,
-            click.style(str(compressed_partial_path), fg="bright_green"),
-            " | ",
+            click.style(str(compressed_name), fg="bright_green"),
+            bar,
             # human file size
             click.style(humanize(image_data.original_size), fg="bright_blue"),
             arrow,
             click.style(humanize(image_data.compressed_size), fg="bright_green"),
-            " | ",
+            bar,
             # percent
             click.style(f"{percent}%", fg="bright_green"),
-            " | ",
+            bar,
             # dimensions
             click.style(str(image_data.original_dimension[0]), fg="bright_blue"),
             x,
             click.style(str(image_data.original_dimension[1]), fg="bright_blue"),
+            bar if strip_exif else "",
+            stripped,
         ]
         if image_data.compressed_dimension:
             compressed_sizes = [
@@ -264,3 +285,29 @@ def print_table(table_data: list[list[str]], column_widths: list[int]) -> None:
             else:
                 click.secho(col.rjust(column_widths[i]), nl=False)
         print()
+
+
+def snip(string: str, length: int, position: float = 0.5) -> str:
+    """Split a string at the position of a separator and return the two parts.
+
+    :param string: The string to split.
+    :param length: The length of the string to return.
+    :param sep: The separator to use between the two parts of the string.
+    :param position: The position of the separator.
+    """
+    sep = "…"
+    if len(string) <= length:
+        return string
+
+    sep_length = len(sep)
+    sep_position = int(length * position)
+    sep_position = (
+        sep_position - sep_length
+        if sep_position + sep_length > length
+        else sep_position
+    )
+    start = string[:sep_position]
+    end = string[sep_position + sep_length - length :]
+    snipped = start + sep + end
+    # return start, end
+    return snipped

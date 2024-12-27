@@ -5,6 +5,13 @@ import subprocess
 from dataclasses import dataclass
 from PIL import Image
 from pprint import pprint as pp  # noqa: F401
+import exifread
+import piexif
+import logging
+
+# Suppress the exifread warning
+# https://github.com/ianare/exif-py/issues/167#issuecomment-1359251424
+logging.getLogger("exifread").setLevel(logging.ERROR)
 
 # from IPython.core.debugger import set_trace; set_trace()
 
@@ -18,6 +25,7 @@ class ImageData:
     compressed_size: int
     original_dimension: tuple[int, int]
     compressed_dimension: tuple[int, int] | None
+    exif_stripped: bool = False
 
 
 def get_files_by_extension(path: str, wanted_filetypes: list[str]) -> list[Path]:
@@ -92,6 +100,29 @@ def trim_image(image: Path, trim: dict[str, int]) -> tuple[int, int]:
     return new_size
 
 
+def strip_exif(image: Path) -> bool:
+    """Strip EXIF metadata from an image."""
+    exif_stripped = False
+    with open(image, "rb") as image_file:
+        exif_data = exifread.process_file(image_file)
+
+    if exif_data:
+        # Create a new EXIF dictionary with empty values
+        new_exif_data = piexif.load(str(image))
+
+        for key in new_exif_data["0th"]:
+            new_exif_data["0th"][key] = 0
+
+        # Save the image with the modified EXIF data
+        try:
+            piexif.insert(piexif.dump(new_exif_data), str(image))
+        except ValueError:
+            # print("Error:", e)
+            pass
+        exif_stripped = True
+    return exif_stripped
+
+
 class Compress:
     """A class to compress a single image using specified quality settings.
 
@@ -119,6 +150,7 @@ class Compress:
         self.size = (0, 0)
         self.convert: str | None = ""
         self.trim: dict[str, int] = {}
+        self.strip_exif: bool = False
 
     def get_type(self, image: Path) -> str:
         image_type: str = image.suffix
@@ -269,6 +301,10 @@ class Compress:
         else:
             raise ValueError(f"Unsupported image type: {image_type}")
 
+        stripped = False
+        if self.strip_exif:
+            stripped = strip_exif(compressed_image)
+
         compressed_size: int = compressed_image.stat().st_size
 
         data = ImageData(
@@ -279,9 +315,6 @@ class Compress:
             compressed_size=compressed_size,
             original_dimension=original_dimensions,
             compressed_dimension=size,
+            exif_stripped=stripped,
         )
-
-        # data = ImageData(
-        #     compressed_image, self.source_image, original_size, compressed_size, size
-        # )
         return data
