@@ -40,7 +40,7 @@ They can be installed with the following commands.
 **Macos**:<br>
 `brew install pngquant jpegoptim webp exiftool`
 
-Also [UV](https://docs.astral.sh/uv/) is required to build the tool.
+Also, [UV](https://docs.astral.sh/uv/) is required to build the tool.
 It can be installed with pipx or curl.  See the [UV install
 docs](https://docs.astral.sh/uv/getting-started/installation/) for
 more info.
@@ -71,6 +71,16 @@ is used, then the compressed images won't be put in a subdir but will be in the
 same dir as the source image.  In which case you will need to use the
 `--destination-rename` or the `--source-rename` option to avoid an error.
 
+
+### Piping
+
+Files can be piped into kompressor using the `find` command.
+
+``` bash
+find . -type f -name "*.png" | kompressor
+# or with options
+find . -type f -name "*.png" | kompressor --quality 50 --output . --source-rename "-ORIGINAL"
+```
 
 ### Renaming
 

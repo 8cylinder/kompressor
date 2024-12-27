@@ -1,4 +1,5 @@
 import sys
+
 import click
 import pathlib
 from pathlib import Path
@@ -13,6 +14,26 @@ from .kompressor import humanize
 
 QUALITY = 80
 
+
+def get_files(ctx, param, value: str) -> list[pathlib.Path] | str:
+    if not value and not click.get_text_stream("stdin").isatty():
+        filenames = click.get_text_stream("stdin").read().strip()
+        images = []
+        for f in filenames.split("\n"):
+            image_file = Path(f)
+            if not image_file.exists():
+                raise click.BadParameter(f"File '{image_file}' does not exist.")
+            if not image_file.is_file():
+                raise click.BadParameter(f"File '{image_file}' must be a dir.")
+            images.append(image_file.absolute())
+        return images
+    else:
+        if not value:
+            param_name = param.name.upper()
+            raise click.UsageError(f"Missing argument '{param_name}...'.", ctx=ctx)
+        return value
+
+
 CONTEXT_SETTINGS = {
     "help_option_names": ["-h", "--help"],
     "token_normalize_func": lambda x: x.lower(),
@@ -22,8 +43,9 @@ CONTEXT_SETTINGS = {
 @click.command(context_settings=CONTEXT_SETTINGS)
 @click.argument(
     "source",
-    required=True,
+    required=False,
     nargs=-1,
+    callback=get_files,
     type=click.Path(resolve_path=True, path_type=Path, exists=True, dir_okay=False),
 )
 @click.option(
@@ -125,6 +147,7 @@ def kompressor(
     `apt install pngquant jpegoptim webp`
     `brew install pngquant jpegoptim webp`
     """
+
     image_types = [".png", ".jpeg", ".jpg", ".webp"]
     image_files: list[pathlib.Path] = []
     for file in source:
