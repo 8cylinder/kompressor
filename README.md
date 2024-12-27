@@ -23,20 +23,22 @@ removing bad lines from the edges of images.
 **Convert** — Convert the image to a different format.  Supported
 formats are png, jpeg and webp.
 
+**Strip metadata** — Remove all metadata from the image using exiftool.
+
 
 ### Requirements
 
 Three command line tools are used for the actual compression,
-pngquant, jpegoptim and cwebp.  Kompressor assumes they exist and are
-on the PATH.
+pngquant, jpegoptim and cwebp, and exiftool is used to remove metadata.
+Kompressor assumes they exist and are on the PATH.
 
 They can be installed with the following commands.
 
 **Linux**:<br>
-`apt install pngquant jpegoptim webp`
+`apt install pngquant jpegoptim webp exiftool`
 
 **Macos**:<br>
-`brew install pngquant jpegoptim webp`
+`brew install pngquant jpegoptim webp exiftool`
 
 Also [UV](https://docs.astral.sh/uv/) is required to build the tool.
 It can be installed with pipx or curl.  See the [UV install

@@ -81,6 +81,7 @@ CONTEXT_SETTINGS = {
     is_flag=True,
     help="(Experimental) Strip all exif tags.",
 )
+@click.option("--compress/--no-compress", default=True)
 @click.version_option()
 def kompressor(
     source: tuple[pathlib.Path, ...],
@@ -93,6 +94,7 @@ def kompressor(
     human: bool,
     trim: str | None,
     strip_exif: bool,
+    compress: bool,
 ) -> None:
     """🪗 Minify/resize/convert images using lossy compression.
 
@@ -151,6 +153,7 @@ def kompressor(
         futures = []
         for image_file in image_files:
             image = Compress(image_file, quality, output_dir)
+            image.do_compress = compress
             if destination_rename:
                 image.dest_extra_name = destination_rename
             if source_rename:
@@ -222,6 +225,7 @@ def display_info(
     column_widths = [0 for i in range(50)]
     table_data = []
     compressed_sizes = []
+    exif_status = []
     bar = " | "
     arrow = " -> "
     x = "x"
@@ -233,10 +237,6 @@ def display_info(
         source_name = snip(image_data.source_image.name, 30, 0.3)
         compressed_partial_path = image_data.compressed_image.relative_to(current_dir)
         compressed_name = f"{compressed_partial_path.parent}/{snip(compressed_partial_path.name, 30, 0.3)}"
-
-        stripped = "N"
-        if image_data.exif_stripped:
-            stripped = click.style("EXIF stripped", fg="bright_green")
 
         text = [
             # filename
@@ -256,8 +256,7 @@ def display_info(
             click.style(str(image_data.original_dimension[0]), fg="bright_blue"),
             x,
             click.style(str(image_data.original_dimension[1]), fg="bright_blue"),
-            bar if strip_exif else "",
-            stripped,
+            # exif status
         ]
         if image_data.compressed_dimension:
             compressed_sizes = [
@@ -267,7 +266,15 @@ def display_info(
                 x,
                 click.style(str(image_data.compressed_dimension[1]), fg="bright_green"),
             ]
-        text = text + compressed_sizes
+        if strip_exif:
+            exif_status = [
+                # exif status
+                bar,
+                click.style("Y", fg="bright_green")
+                if image_data.exif_stripped
+                else click.style("N", fg="bright_yellow"),
+            ]
+        text = text + compressed_sizes + exif_status
 
         table_data.append(text)
 

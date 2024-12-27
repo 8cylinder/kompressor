@@ -5,8 +5,6 @@ import subprocess
 from dataclasses import dataclass
 from PIL import Image
 from pprint import pprint as pp  # noqa: F401
-import exifread
-import piexif
 import logging
 
 # Suppress the exifread warning
@@ -101,26 +99,13 @@ def trim_image(image: Path, trim: dict[str, int]) -> tuple[int, int]:
 
 
 def strip_exif(image: Path) -> bool:
-    """Strip EXIF metadata from an image."""
-    exif_stripped = False
-    with open(image, "rb") as image_file:
-        exif_data = exifread.process_file(image_file)
-
-    if exif_data:
-        # Create a new EXIF dictionary with empty values
-        new_exif_data = piexif.load(str(image))
-
-        for key in new_exif_data["0th"]:
-            new_exif_data["0th"][key] = 0
-
-        # Save the image with the modified EXIF data
-        try:
-            piexif.insert(piexif.dump(new_exif_data), str(image))
-        except ValueError:
-            # print("Error:", e)
-            pass
-        exif_stripped = True
-    return exif_stripped
+    cmd = ["exiftool", "-overwrite_original_in_place", "-all=", str(image)]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    print(result.stdout)
+    metadata_removed = False
+    if "1 image files updated" in result.stdout:
+        metadata_removed = True
+    return metadata_removed
 
 
 class Compress:
@@ -140,6 +125,7 @@ class Compress:
     }
 
     def __init__(self, source_image: pathlib.Path, quality: int, output_dir: str):
+        self.do_compress: bool = True
         self.source_image = source_image
         self.quality: int = quality
         self.output_dir = output_dir
@@ -291,15 +277,16 @@ class Compress:
         if self.size != (0, 0):
             size = scale_image(compressed_image, self.size[0], self.size[1])
 
-        image_type: str = self.get_type(compressed_image)
-        if image_type == "jpeg":
-            self.compress_jpeg(compressed_image)
-        elif image_type == "png":
-            self.compress_png(compressed_image)
-        elif image_type == "webp":
-            self.compress_webp(compressed_image)
-        else:
-            raise ValueError(f"Unsupported image type: {image_type}")
+        if self.do_compress:
+            image_type: str = self.get_type(compressed_image)
+            if image_type == "jpeg":
+                self.compress_jpeg(compressed_image)
+            elif image_type == "png":
+                self.compress_png(compressed_image)
+            elif image_type == "webp":
+                self.compress_webp(compressed_image)
+            else:
+                raise ValueError(f"Unsupported image type: {image_type}")
 
         stripped = False
         if self.strip_exif:
