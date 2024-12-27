@@ -139,9 +139,7 @@ class Compress:
         "webp": "webp",
     }
 
-    def __init__(
-        self, source_image: pathlib.Path, quality: int, output_dir: pathlib.Path
-    ):
+    def __init__(self, source_image: pathlib.Path, quality: int, output_dir: str):
         self.source_image = source_image
         self.quality: int = quality
         self.output_dir = output_dir
@@ -214,7 +212,7 @@ class Compress:
         new_name = Path(name.parent, dest_dir, base_name)
         return new_name
 
-    def make_filenames(self) -> tuple[Path, Path]:
+    def make_filenames(self, output_dir: Path) -> tuple[Path, Path]:
         """Create new file names for the destination and new source name."""
         source_new_name: Path = None
         # dest_name: Path = None
@@ -222,7 +220,7 @@ class Compress:
         if self.source_extra_name:
             here = source_name.parent
             source_new_name = self.create_new_name(here, self.source_extra_name)
-        dest_name = self.create_new_name(self.output_dir, self.dest_extra_name)
+        dest_name = self.create_new_name(output_dir, self.dest_extra_name)
         return dest_name, source_new_name
 
     def copy_move(self, dest_name: Path, source_new_name: Path) -> None:
@@ -268,15 +266,17 @@ class Compress:
         original_size: int = self.source_image.stat().st_size
 
         # create the output dir if it doesn't exist
+        output_dir = Path(self.source_image.parent / "kompressor")
         if self.output_dir:
+            output_dir = Path(self.source_image.parent, self.output_dir)
             try:
-                self.output_dir.mkdir(parents=True, exist_ok=True)
+                output_dir.mkdir(parents=True, exist_ok=True)
             except FileExistsError:
                 # in multi-threaded environments, this directory
-                # may have been created
+                # may have been created in another thread.
                 pass
 
-        compressed_image, renamed_source_image = self.make_filenames()
+        compressed_image, renamed_source_image = self.make_filenames(output_dir)
         self.copy_move(compressed_image, renamed_source_image)
         original_dimensions = image_dimensions(compressed_image)
         size = None

@@ -24,22 +24,11 @@ removing bad lines from the edges of images.
 formats are png, jpeg and webp.
 
 
-### Renaming
-
-Files can optionally have a string added to the end of the filename using
-the `-s` and `-d` options.  The `-d` option renames the compressed image
-and the `-s` option renames the source image.  These are applied whether it's
-put into a subdir or not.
-
-Eg, with an argument of `-ORIGINAL`, this file `image.jpg` would become
-`image-ORIGINAL.jpg`.
-
-
 ### Requirements
 
 Three command line tools are used for the actual compression,
 pngquant, jpegoptim and cwebp.  Kompressor assumes they exist and are
-in the PATH.
+on the PATH.
 
 They can be installed with the following commands.
 
@@ -66,6 +55,30 @@ uv build
 uv tool install ./dist/kompressor-XXXXX-py3-none-any.whl
 # kompressor is now installed
 ```
+
+
+### Output dir
+
+If the `--output` option is not used, the compressed image will be put in a
+dir called `kompressor` in the same dir as the source image.  If the dir
+doesn't exist, it will be created.  That means that if multiple images are
+specified in a dir tree, then there will be multiple `kompressor` dirs created.
+
+When using the `--output` option, the compressed dir will use that name.  If `.`
+is used, then the compressed images won't be put in a subdir but will be in the
+same dir as the source image.  In which case you will need to use the
+`--destination-rename` or the `--source-rename` option to avoid an error.
+
+
+### Renaming
+
+Files can optionally have a string added to the end of the filename using
+the `--source-rename / -s` and `--destination-rename / -d` options.
+The `-d` option renames the compressed image and the `-s` option renames
+the source image.  These are applied whether it's put into a subdir or not.
+
+Eg, with an argument of `-ORIGINAL`, this file `image.jpg` would become
+`image-ORIGINAL.jpg`.
 
 
 ### Usage

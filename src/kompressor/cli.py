@@ -30,8 +30,8 @@ CONTEXT_SETTINGS = {
     "--output-dir",
     "-o",
     default="kompressor",
-    type=click.Path(resolve_path=True, path_type=Path, file_okay=False),
-    help='Optional output dir, defaults to "kompressor".',
+    type=str,
+    help='Optional output dir, defaults to "kompressor" in each image\'s directory.',
 )
 @click.option(
     "--quality",
@@ -84,7 +84,7 @@ CONTEXT_SETTINGS = {
 @click.version_option()
 def kompressor(
     source: tuple[pathlib.Path, ...],
-    output_dir: pathlib.Path,
+    output_dir: str,
     quality: int,
     source_rename: str | None,
     destination_rename: str | None,
@@ -217,7 +217,7 @@ def image_data_2_json(images_data: list[ImageData]) -> str:
 
 
 def display_info(
-    images_data: list[ImageData], strip_exif
+    images_data: list[ImageData], strip_exif: bool
 ) -> tuple[list[list[str]], list[int]]:
     column_widths = [0 for i in range(50)]
     table_data = []
@@ -234,7 +234,7 @@ def display_info(
         compressed_partial_path = image_data.compressed_image.relative_to(current_dir)
         compressed_name = f"{compressed_partial_path.parent}/{snip(compressed_partial_path.name, 30, 0.3)}"
 
-        stripped = 'N'
+        stripped = "N"
         if image_data.exif_stripped:
             stripped = click.style("EXIF stripped", fg="bright_green")
 
