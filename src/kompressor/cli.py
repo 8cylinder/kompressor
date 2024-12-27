@@ -1,5 +1,5 @@
 import sys
-
+import os
 import click
 import pathlib
 from pathlib import Path
@@ -191,24 +191,37 @@ def kompressor(
             futures.append(future)
 
         images_data = []
-        for future in concurrent.futures.as_completed(futures):
-            try:
-                image_data = future.result()
-            except FileNotFoundError as e:
-                click.secho(f"File not found: {e}", fg="red")
-                sys.exit(1)
-            except shutil.SameFileError as e:
-                click.secho(f"{e}", fg="red")
-                click.secho(
-                    'Try renaming the source image with the "-s" option.',
-                    fg="bright_red",
-                )
-                sys.exit(1)
-            except OSError as e:
-                click.secho(e, fg="red")
-                sys.exit(1)
+        with click.progressbar(
+            futures,
+            show_percent=False,
+            width=0,
+            fill_char=click.style("■", fg=(165, 152, 250)),
+            empty_char=click.style("■", fg=(32, 35, 102)),
+            bar_template="%(bar)s",
+        ) as bar:
+            for future in bar:
+                try:
+                    image_data = future.result()
+                except FileNotFoundError as e:
+                    click.secho(f"File not found: {e}", fg="red")
+                    sys.exit(1)
+                except shutil.SameFileError as e:
+                    click.secho(f"{e}", fg="red")
+                    click.secho(
+                        'Try renaming the source image with the "-s" option.',
+                        fg="bright_red",
+                    )
+                    sys.exit(1)
+                except OSError as e:
+                    click.secho(e, fg="red")
+                    sys.exit(1)
 
-            images_data.append(image_data)
+                images_data.append(image_data)
+
+        sys.stdout.write("\033[1A")  # Move cursor up one line
+        sys.stdout.write(" " * os.get_terminal_size().columns)  # Clear line
+        sys.stdout.write("\033[1A")  # Move cursor up one line
+        print()
 
         if human:
             table_data, column_widths = display_info(images_data, strip_exif)
