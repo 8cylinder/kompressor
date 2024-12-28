@@ -1,4 +1,4 @@
 /dist/
 __pycache__/
 *.pyc
-test-images/*
+test-images
