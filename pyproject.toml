@@ -1,10 +1,18 @@
 [project]
 name = "kompressor"
 version = "0.2.2"
-description = "Compress and resize images"
+description = "Compress, resize, trim and convert images"
 readme = "README.md"
 authors = [
     { name = "Sheldon McGrandle", email = "developer@8cylinder.com" }
+]
+classifiers = [
+    'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+    'Operating System :: MacOS',
+    'Operating System :: POSIX :: Linux',
+    'Programming Language :: Python :: 3.13',
+    'Intended Audience :: Developers',
+    'Natural Language :: English',
 ]
 requires-python = ">=3.13"
 dependencies = [
@@ -27,3 +35,7 @@ dev = [
     "pytest>=8.3.4",
     "ruff>=0.8.2",
 ]
+
+[project.urls]
+Homepage = "https://github.com/8cylinder/kompressor"
+Issues = "https://github.com/8cylinder/kompressor/issues"
