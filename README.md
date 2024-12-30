@@ -48,10 +48,22 @@ more info.
 
 ### Installation
 
-Installation is done from the git repo.
+Kompressor can be installed from
+[pypi](https://pypi.org/project/kompressor/0.2.2/).  Its recomended
+you use [pipx](https://pipx.pypa.io/stable/installation/) to install
+python applications.
 
 ``` bash
-cd /path/to/the/repo
+pip install kompressor
+# or better yet,
+pipx install kompressor
+```
+
+Installing from the git repo:
+
+``` bash
+git clone https://github.com/8cylinder/kompressor.git
+cd kompressor
 uv sync
 uv build
 uv tool install ./dist/kompressor-XXXXX-py3-none-any.whl
@@ -197,24 +209,24 @@ kompressor --convert png image.jpg -o .
 Output can be human readable or json using the `--human` (default) or `--json` flag.
 
 ``` bash
-kompressor image-*.png  -c webp -d '-NEW' -x 1000 1000
+kompressor image-*.png -d '-NEW' -x 1000 1000
 ```
 
 ```
-image-01.png -> kompressor/image-01-NEW.webp | 208K ->  49K |  213367 ->  50642 | 1538 x  985 -> 1000 x  640
-image-02.png -> kompressor/image-02-NEW.webp | 208K ->  49K |  213367 ->  50642 | 1538 x  985 -> 1000 x  640
-image-03.png -> kompressor/image-03-NEW.webp | 6.3M -> 118K | 6644905 -> 120922 | 2080 x 1880 -> 1000 x  904
-image-04.png -> kompressor/image-04-NEW.webp | 213K ->  52K |  217785 ->  53054 | 1538 x  985 -> 1000 x  640
-image-05.png -> kompressor/image-05-NEW.webp | 6.5M -> 165K | 6775038 -> 168756 | 2080 x 1880 -> 1000 x  904
-image-06.png -> kompressor/image-06-NEW.webp | 205K ->  49K |  209788 ->  49906 | 1538 x  985 -> 1000 x  640
-image-07.png -> kompressor/image-07-NEW.webp | 6.1M ->  72K | 6374536 ->  73738 | 2080 x 1880 -> 1000 x  904
-image-08.png -> kompressor/image-08-NEW.webp |  12K ->   3K |   11974 ->   2902 |  392 x  146 ->  392 x  146
-image-09.png -> kompressor/image-09-NEW.webp |  17K ->   6K |   17827 ->   6478 |  430 x  146 ->  430 x  146
-image-10.png -> kompressor/image-10-NEW.webp |  18K ->   5K |   18089 ->   5148 |  420 x  146 ->  420 x  146
-image-11.png -> kompressor/image-11-NEW.webp |   3K ->   3K |    3467 ->   3568 |  380 x  146 ->  380 x  146
-image-12.png -> kompressor/image-12-NEW.webp |   9K ->   3K |    9257 ->   2624 |  276 x  146 ->  276 x  146
-image-13.png -> kompressor/image-13-NEW.webp |   4K ->   4K |    4509 ->   4224 | 1000 x 1000 -> 1000 x 1000
+image-01.png -> kompressor/image-01-NEW.png |  48K ->  25K | 52% | 1538x 985 -> 1000x 640
+image-03.png -> kompressor/image-03-NEW.png | 6.3M -> 428K |  7% | 2080x1880 -> 1000x 904
+image-04.png -> kompressor/image-04-NEW.png | 213K ->  38K | 18% | 1538x 985 -> 1000x 640
+image-05.png -> kompressor/image-05-NEW.png | 6.5M -> 472K |  7% | 2080x1880 -> 1000x 904
+image-06.png -> kompressor/image-06-NEW.png | 205K ->  35K | 17% | 1538x 985 -> 1000x 640
+image-07.png -> kompressor/image-07-NEW.png | 6.1M -> 385K |  6% | 2080x1880 -> 1000x 904
+image-08.png -> kompressor/image-08-NEW.png |  12K ->   4K | 32% |  392x 146 ->  392x 146
+image-09.png -> kompressor/image-09-NEW.png |  17K ->   5K | 30% |  430x 146 ->  430x 146
+image-10.png -> kompressor/image-10-NEW.png |  18K ->   5K | 30% |  420x 146 ->  420x 146
+image-11.png -> kompressor/image-11-NEW.png |   3K ->   3K | 95% |  380x 146 ->  380x 146
+image-12.png -> kompressor/image-12-NEW.png |   9K ->   3K | 31% |  276x 146 ->  276x 146
+image-13.png -> kompressor/image-13-NEW.png |   4K ->   1K | 24% | 1000x1000 -> 1000x1000
 ```
+
 
 Using the `--json` flag, output will look like this.  Note I'm using
 [jq](https://jqlang.github.io/jq/) to format the output.
@@ -287,3 +299,7 @@ kompressor image-{3,4}.png -x 100 100 --json | jq
 
 #### Install editable
 `uv tool install --editable .`
+
+#### Upload to pypi
+`twine upload --repository testpypi dist/*`
+`twine upload dist/*`
