@@ -1,6 +1,6 @@
 [project]
 name = "kompressor"
-version = "0.2.4"
+version = "0.2.5"
 description = "Compress, resize, trim and convert images"
 readme = "README.md"
 authors = [
@@ -11,6 +11,9 @@ classifiers = [
     'Operating System :: MacOS',
     'Operating System :: POSIX :: Linux',
     'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.11',
+    'Programming Language :: Python :: 3.12',
+    'Programming Language :: Python :: 3.13',
     'Intended Audience :: Developers',
     'Natural Language :: English',
 ]
