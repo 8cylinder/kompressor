@@ -1,6 +1,6 @@
 [project]
 name = "kompressor"
-version = "0.2.3"
+version = "0.2.4"
 description = "Compress, resize, trim and convert images"
 readme = "README.md"
 authors = [
@@ -10,11 +10,11 @@ classifiers = [
     'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
     'Operating System :: MacOS',
     'Operating System :: POSIX :: Linux',
-    'Programming Language :: Python :: 3.13',
+    'Programming Language :: Python :: 3.10',
     'Intended Audience :: Developers',
     'Natural Language :: English',
 ]
-requires-python = ">=3.13"
+requires-python = ">=3.10"
 dependencies = [
     "click>=8.1.7",
     "pillow>=11.0.0",
