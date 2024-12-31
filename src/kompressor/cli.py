@@ -218,12 +218,11 @@ def kompressor(
 
                 images_data.append(image_data)
 
-        sys.stdout.write("\033[1A")  # Move cursor up one line
-        sys.stdout.write(" " * os.get_terminal_size().columns)  # Clear line
-        sys.stdout.write("\033[1A")  # Move cursor up one line
-        print()
-
         if human:
+            sys.stdout.write("\033[1A")  # Move cursor up one line
+            sys.stdout.write(" " * os.get_terminal_size().columns)  # Clear line
+            sys.stdout.write("\033[1A")  # Move cursor up one line
+            print()
             table_data, column_widths = display_info(images_data, strip_exif)
             print_table(table_data, column_widths)
         else:
