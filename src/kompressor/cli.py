@@ -10,12 +10,16 @@ import json
 from .kompressor import Compress
 from .kompressor import ImageData
 from .kompressor import humanize
+from typing import Any
 
 
 QUALITY = 80
+BAR = " | "
+ARROW = " -> "
+X = "x"
 
 
-def get_files(ctx, param, value: str) -> list[pathlib.Path] | str:
+def get_files(ctx: Any, param: Any, value: str) -> list[pathlib.Path] | str:
     if not value and not click.get_text_stream("stdin").isatty():
         filenames = click.get_text_stream("stdin").read().strip()
         images = []
@@ -261,9 +265,6 @@ def display_info(
     table_data = []
     compressed_sizes = []
     exif_status = []
-    bar = " | "
-    arrow = " -> "
-    x = "x"
     current_dir = Path().absolute()
     for image_data in images_data:
         percent = int(
@@ -276,35 +277,35 @@ def display_info(
         text = [
             # filename
             click.style(str(source_name), fg="bright_blue"),
-            arrow,
+            ARROW,
             click.style(str(compressed_name), fg="bright_green"),
-            bar,
+            BAR,
             # human file size
             click.style(humanize(image_data.original_size), fg="bright_blue"),
-            arrow,
+            ARROW,
             click.style(humanize(image_data.compressed_size), fg="bright_green"),
-            bar,
+            BAR,
             # percent
             click.style(f"{percent}%", fg="bright_green"),
-            bar,
+            BAR,
             # dimensions
             click.style(str(image_data.original_dimension[0]), fg="bright_blue"),
-            x,
+            X,
             click.style(str(image_data.original_dimension[1]), fg="bright_blue"),
             # exif status
         ]
         if image_data.compressed_dimension:
             compressed_sizes = [
                 # changed dimensions
-                arrow,
+                ARROW,
                 click.style(str(image_data.compressed_dimension[0]), fg="bright_green"),
-                x,
+                X,
                 click.style(str(image_data.compressed_dimension[1]), fg="bright_green"),
             ]
         if strip_exif:
             exif_status = [
                 # exif status
-                bar,
+                BAR,
                 click.style("Y", fg="bright_green")
                 if image_data.exif_stripped
                 else click.style("N", fg="bright_yellow"),
