@@ -16,8 +16,8 @@ current dir or a subdir.
 be resized to fit within the bounds while maintaining the aspect
 ratio.
 
-**Trim** — Trim pixels from the sides of the image, by specifiying a
-number of pixels from each site.  This is particularly usefull for
+**Trim** — Trim pixels from the sides of the image, by specifying a
+number of pixels from each site.  This is particularly useful for
 removing bad lines from the edges of images.
 
 **Convert** — Convert the image to a different format.  Supported
@@ -49,7 +49,7 @@ more info.
 ### Installation
 
 Kompressor can be installed from
-[pypi](https://pypi.org/project/kompressor/0.2.2/).  Its recomended
+[pypi](https://pypi.org/project/kompressor/0.2.2/).  Its recommended
 you use [pipx](https://pipx.pypa.io/stable/installation/) to install
 python applications.
 
