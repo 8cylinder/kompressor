@@ -1,7 +1,7 @@
 
 # 🪗 Kompressor
 
-**Compress, convert and resize images.**
+**Compress, convert, resize, trim, and slugify images.**
 
 
 ### Features
@@ -206,7 +206,7 @@ kompressor --convert png image.jpg -o .
 
 ### Output
 
-Output can be human readable or json using the `--human` (default) or `--json` flag.
+Output can be a table or json using the `--table` (default) or `--json` flag.
 
 ``` bash
 kompressor image-*.png -d '-NEW' -x 1000 1000

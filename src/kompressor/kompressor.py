@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from PIL import Image
 from pprint import pprint as pp  # noqa: F401
 import logging
+from slugify import slugify
+
 
 # Suppress the exifread warning
 # https://github.com/ianare/exif-py/issues/167#issuecomment-1359251424
@@ -135,6 +137,7 @@ class Compress:
         self.convert: str | None = ""
         self.trim: dict[str, int] = {}
         self.strip_exif: bool = False
+        self.slugify: bool = False
 
     def get_type(self, image: Path) -> str:
         image_type: str = image.suffix
@@ -194,7 +197,10 @@ class Compress:
 
     def create_new_name(self, dest_dir: Path, suffix: str) -> Path:
         name = self.source_image
-        base_name = name.stem + suffix + name.suffix
+        base_name = name.stem
+        if self.slugify:
+            base_name = slugify(name.stem)
+        base_name = base_name + suffix + name.suffix
         new_name = Path(name.parent, dest_dir, base_name)
         return new_name
 

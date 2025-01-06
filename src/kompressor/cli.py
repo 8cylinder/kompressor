@@ -89,19 +89,27 @@ CONTEXT_SETTINGS = {
     help="Resize the image(s) to the specified dimensions.",
 )
 @click.option(
-    "--human/--json",
+    "--table/--json",
     default=True,
-    help="Output format in human readable or json, default: human.",
+    help="Output format as a table or json, default: table.",
 )
 @click.option(
     "--trim",
-    help='Trim pixels from the edges of the image. format: "tINT,rINT,bINT,lINT"',
+    help='Trim pixels from the edges of the image. format (top, right, bottom, left): "tX,rX,bX,lX".  Not all four fields are required, eg: "t1,r10',
 )
 @click.option(
     "--strip-exif",
     "-e",
     is_flag=True,
     help="(Experimental) Strip all exif tags.",
+)
+@click.option(
+    "--slugify/--no-slugify",
+    default=False,
+    help=(
+        "Slugify the new filename, except for any strings added via the -d flag."
+        "If the -s flag is used, both files will be slugified.  Default: no."
+    ),
 )
 @click.option("--compress/--no-compress", default=True)
 @click.version_option()
@@ -113,10 +121,11 @@ def kompressor(
     destination_rename: str | None,
     convert: str | None,
     size: tuple[int, int],
-    human: bool,
+    table: bool,
     trim: str | None,
     strip_exif: bool,
     compress: bool,
+    slugify: bool,
 ) -> None:
     """🪗 Minify/resize/convert images using lossy compression.
 
@@ -185,6 +194,7 @@ def kompressor(
             image.convert = convert
             image.trim = trims
             image.strip_exif = strip_exif
+            image.slugify = slugify
 
             # Submit the compression task
             future = executor.submit(image.compress)
@@ -218,7 +228,7 @@ def kompressor(
 
                 images_data.append(image_data)
 
-        if human:
+        if table:
             sys.stdout.write("\033[1A")  # Move cursor up one line
             sys.stdout.write(" " * os.get_terminal_size().columns)  # Clear line
             sys.stdout.write("\033[1A")  # Move cursor up one line
