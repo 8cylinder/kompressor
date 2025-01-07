@@ -1,6 +1,6 @@
 [project]
 name = "kompressor"
-version = "0.2.5"
+version = "0.2.6"
 description = "Compress, resize, trim and convert images"
 readme = "README.md"
 authors = [
