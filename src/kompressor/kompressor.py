@@ -133,7 +133,7 @@ class Compress:
         self.output_dir = output_dir
         self.dest_extra_name: str = ""
         self.source_extra_name: str = ""
-        self.size = (0, 0)
+        self.size: tuple[int, int] = (0, 0)
         self.convert: str | None = ""
         self.trim: dict[str, int] = {}
         self.strip_exif: bool = False

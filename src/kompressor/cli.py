@@ -2,6 +2,7 @@ import sys
 import os
 import click
 import pathlib
+import re
 from pathlib import Path
 import concurrent.futures
 from pprint import pprint as pp  # noqa: F401
@@ -88,9 +89,8 @@ CONTEXT_SETTINGS = {
     "--dimensions",
     "-x",
     "size",
-    type=(int, int),
-    default=(0, 0),
-    help="Resize the image(s) to the specified dimensions.",
+    type=str,
+    help="Shrink the image(s) to the specified dimensions.  Format: w,h. Use a comma to separate the values.  If only one value is specified that will be used as the width.",
 )
 @click.option(
     "--table/--json",
@@ -99,7 +99,7 @@ CONTEXT_SETTINGS = {
 )
 @click.option(
     "--trim",
-    help='Trim pixels from the edges of the image. format (top, right, bottom, left): "tX,rX,bX,lX".  Not all four fields are required, eg: "t1,r10',
+    help='Trim pixels from the edges of the image.  Format (top, right, bottom, left): "tX,rX,bX,lX".  Not all four fields are required, eg: "t1,r10',
 )
 @click.option(
     "--strip-exif",
@@ -124,7 +124,7 @@ def kompressor(
     source_rename: str | None,
     destination_rename: str | None,
     convert: str | None,
-    size: tuple[int, int],
+    size: str | None,
     table: bool,
     trim: str | None,
     strip_exif: bool,
@@ -194,7 +194,12 @@ def kompressor(
                 image.dest_extra_name = destination_rename
             if source_rename:
                 image.source_extra_name = source_rename
-            image.size = size
+            if size:
+                size = re.sub(r"\D+$", "", size)  # remove a trailing comma
+                split = tuple(map(int, size.split(",")))
+                width = split[0]
+                height = split[1] if len(split) > 1 else 1_000_000_000
+                image.size = (width, height)
             image.convert = convert
             image.trim = trims
             image.strip_exif = strip_exif
