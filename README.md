@@ -40,10 +40,10 @@ They can be installed with the following commands.
 **Macos**:<br>
 `brew install pngquant jpegoptim webp exiftool`
 
-Also, [UV](https://docs.astral.sh/uv/) is required to build the tool.
-It can be installed with pipx or curl.  See the [UV install
-docs](https://docs.astral.sh/uv/getting-started/installation/) for
-more info.
+> To build the tool locally from git, [UV](https://docs.astral.sh/uv/) is required.
+> It can be installed with pipx or curl, see the 
+> [UV install docs](https://docs.astral.sh/uv/getting-started/installation/) 
+> for more info.
 
 
 ### Installation
@@ -182,11 +182,13 @@ kompressor --trim t10,r10,b10,l10 image.png
 kompressor --trim t1,r3 image.png
 ```
 
-**Resize** — Scale the image to fit within the bounds of the width and
-height.  The aspect ratio is maintained.
+**Resize** — Shrink the image to fit within the bounds of the width and
+height, the aspect ratio is maintained.  Use a comma to separate the width & height.
+If only one value is specified, that will set the width.
 
 ```bash
-kompressor --resize 1000x1000 image.png
+kompressor --resize 1000,1000 image.png
+kompressor --resize 1000 image.png
 ```
 
 **Convert** — Convert the image to a different format.  Supported
