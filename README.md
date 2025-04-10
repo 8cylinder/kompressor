@@ -303,5 +303,5 @@ kompressor image-{3,4}.png -x 100 100 --json | jq
 `uv tool install --editable .`
 
 #### Upload to pypi
-`twine upload --repository testpypi dist/*`
+`twine upload --repository testpypi dist/*`<br>
 `twine upload dist/*`
