@@ -1,6 +1,6 @@
 [project]
 name = "kompressor"
-version = "0.2.7"
+version = "0.2.8"
 description = "Compress, resize, trim and convert images"
 readme = "README.md"
 authors = [
@@ -21,6 +21,7 @@ requires-python = ">=3.10"
 dependencies = [
     "click>=8.1.7",
     "pillow>=11.0.0",
+    "pillow-avif-plugin>=1.5.2",
     "python-slugify>=8.0.4",
 ]
 

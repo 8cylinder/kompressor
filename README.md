@@ -21,15 +21,15 @@ number of pixels from each site.  This is particularly useful for
 removing bad lines from the edges of images.
 
 **Convert** — Convert the image to a different format.  Supported
-formats are png, jpeg and webp.
+formats are png, jpeg, webp and avif.
 
 **Strip metadata** — Remove all metadata from the image using exiftool.
 
 
 ### Requirements
 
-Three command line tools are used for the actual compression,
-pngquant, jpegoptim and cwebp, and exiftool is used to remove metadata.
+Four command line tools are used for the actual compression,
+pngquant, jpegoptim, cwebp and avif, and exiftool is used to remove metadata.
 Kompressor assumes they exist and are on the PATH.
 
 They can be installed with the following commands.
@@ -40,10 +40,13 @@ They can be installed with the following commands.
 **Macos**:<br>
 `brew install pngquant jpegoptim webp exiftool`
 
-> To build the tool locally from git, [UV](https://docs.astral.sh/uv/) is required.
-> It can be installed with pipx or curl, see the 
-> [UV install docs](https://docs.astral.sh/uv/getting-started/installation/) 
-> for more info.
+**AVIF**:<br>
+`npm install avif`
+
+Also, [UV](https://docs.astral.sh/uv/) is required to build the tool.
+It can be installed with pipx or curl.  See the [UV install
+docs](https://docs.astral.sh/uv/getting-started/installation/) for
+more info.
 
 
 ### Installation
@@ -111,7 +114,7 @@ By default, if the `--output` option is not used, the compressed file
 will be put in a subdir called "kompressor" in the same dir as the
 source file.  It will be created if it doesn't exist.
 
-Supported formats: png, jpeg, webp.
+Supported formats: png, jpeg, webp and avif.
 
 **Basic usage** — compress single or multiple images.  This will
 create the `kompressor` dir and put the compressed image in it.
@@ -192,7 +195,7 @@ kompressor --resize 1000 image.png
 ```
 
 **Convert** — Convert the image to a different format.  Supported
-formats are png, jpeg and webp.
+formats are png, jpeg, webp and avif.
 
 ```bash
 # convert image.png to image.webp

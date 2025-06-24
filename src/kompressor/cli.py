@@ -82,7 +82,7 @@ CONTEXT_SETTINGS = {
 @click.option(
     "--convert",
     "-c",
-    type=click.Choice(["jpeg", "png", "webp"]),
+    type=click.Choice(["jpeg", "png", "webp", "avif"]),
     help="Convert the image(s) to a different format.",
 )
 @click.option(
@@ -138,7 +138,7 @@ def kompressor(
     By default, the compressed images are saved in a dir called 'kompressor',
     unless overridden with the '-o' option.  It will be created if necessary.
 
-    Supported formats: png, jpeg, webp.
+    Supported formats: png, jpeg, webp and avif.
 
     \b
     Renaming
@@ -159,6 +159,7 @@ def kompressor(
     These command line tools are required:
     `apt install pngquant jpegoptim webp`
     `brew install pngquant jpegoptim webp`
+    `npm install avif`
     """
 
     image_types = [".png", ".jpeg", ".jpg", ".webp"]

@@ -8,6 +8,10 @@ from pprint import pprint as pp  # noqa: F401
 import logging
 from slugify import slugify
 
+# This is a plugin that adds support for AVIF files until official support has been added
+# https://github.com/python-pillow/Pillow/pull/5201
+import pillow_avif  # noqa: F401
+
 
 # Suppress the exifread warning
 # https://github.com/ianare/exif-py/issues/167#issuecomment-1359251424
@@ -124,6 +128,7 @@ class Compress:
         "jpeg": "jpeg",
         "jpg": "jpeg",
         "webp": "webp",
+        "avif": "avif",
     }
 
     def __init__(self, source_image: pathlib.Path, quality: int, output_dir: str):
@@ -189,6 +194,16 @@ class Compress:
         ]
         # fmt: on
         self.run_cmd(cmd)
+
+    def compress_avif(self, image: Path) -> None:
+        # fmt: off
+        cmd = [
+            'avif',
+            '--input', str(image),
+            '--quality', str(self.quality),
+            '--overwrite',
+        ]
+        # fmt: on
 
     @staticmethod
     def run_cmd(cmd: list[str]) -> None:
@@ -291,6 +306,8 @@ class Compress:
                 self.compress_png(compressed_image)
             elif image_type == "webp":
                 self.compress_webp(compressed_image)
+            elif image_type == "avif":
+                self.compress_avif(compressed_image)
             else:
                 raise ValueError(f"Unsupported image type: {image_type}")
 
