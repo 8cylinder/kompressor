@@ -116,6 +116,11 @@ CONTEXT_SETTINGS = {
     ),
 )
 @click.option("--compress/--no-compress", default=True)
+@click.option(
+    "--write-cmd/--no-write-cmd",
+    default=True,
+    help="Write the command used to run kompressor to a file in the output dir.  Default: yes.",
+)
 @click.version_option()
 def kompressor(
     source: tuple[pathlib.Path, ...],
@@ -130,6 +135,7 @@ def kompressor(
     strip_exif: bool,
     compress: bool,
     slugify: bool,
+    write_cmd: bool,
 ) -> None:
     """🪗 Minify/resize/convert images using lossy compression.
 
@@ -247,6 +253,18 @@ def kompressor(
             print_table(table_data, column_widths)
         else:
             click.echo(image_data_2_json(images_data))
+
+        if images_data and write_cmd:
+            cmd_write_dir = images_data[0].compressed_image.parent
+            write_command(cmd_write_dir)
+
+
+def write_command(output_dir: Path) -> None:
+    """Write the command used to run kompressor to a file."""
+    cmd_file = output_dir / ".kompressor-cmd"
+    cmd = " ".join(sys.argv)
+    with open(cmd_file, "w") as f:
+        f.write(cmd)
 
 
 def image_data_2_json(images_data: list[ImageData]) -> str:
