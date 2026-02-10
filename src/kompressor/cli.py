@@ -165,6 +165,7 @@ def kompressor(
     These command line tools are required:
     `apt install pngquant jpegoptim webp`
     `brew install pngquant jpegoptim webp`
+    `flox install pngquant jpegoptim libwebp`
     `npm install avif`
     """
 
